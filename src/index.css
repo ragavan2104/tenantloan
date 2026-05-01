@@ -1,0 +1,320 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-zinc-800;
+  }
+  
+  body {
+    @apply bg-zinc-950 text-slate-100 font-sans antialiased;
+  }
+
+  /* Light theme overrides */
+  :root:not(.dark) body {
+    @apply bg-gray-50 text-gray-900;
+  }
+
+  :root:not(.dark) * {
+    @apply border-gray-300;
+  }
+
+  /* Global text color overrides for light theme */
+  :root:not(.dark) .text-slate-100 {
+    color: #111827 !important; /* gray-900 */
+  }
+
+  :root:not(.dark) .text-slate-200 {
+    color: #1f2937 !important; /* gray-800 */
+  }
+
+  :root:not(.dark) .text-slate-300 {
+    color: #374151 !important; /* gray-700 */
+  }
+
+  :root:not(.dark) .text-slate-400 {
+    color: #4b5563 !important; /* gray-600 */
+  }
+
+  :root:not(.dark) .text-slate-500 {
+    color: #6b7280 !important; /* gray-500 */
+  }
+
+  :root:not(.dark) .text-slate-600 {
+    color: #6b7280 !important; /* gray-500 */
+  }
+
+  :root:not(.dark) .text-slate-700 {
+    color: #374151 !important; /* gray-700 */
+  }
+
+  /* Icon colors for light theme */
+  :root:not(.dark) .text-primary-400 {
+    color: #4F46E5 !important; /* primary */
+  }
+
+  :root:not(.dark) .text-blue-400 {
+    color: #3b82f6 !important; /* blue-500 */
+  }
+
+  :root:not(.dark) .text-green-400 {
+    color: #10b981 !important; /* green-500 */
+  }
+
+  :root:not(.dark) .text-purple-400 {
+    color: #a855f7 !important; /* purple-500 */
+  }
+
+  :root:not(.dark) .text-indigo-400 {
+    color: #6366f1 !important; /* indigo-500 */
+  }
+
+  /* Background overrides for light theme */
+  :root:not(.dark) .bg-slate-800\/50,
+  :root:not(.dark) .bg-slate-800\/30 {
+    background-color: #f9fafb !important; /* gray-50 */
+  }
+
+  :root:not(.dark) .bg-zinc-900 {
+    background-color: #ffffff !important; /* white */
+  }
+
+  :root:not(.dark) .bg-zinc-800 {
+    background-color: #f3f4f6 !important; /* gray-100 */
+  }
+
+  :root:not(.dark) .bg-zinc-800\/50 {
+    background-color: #f9fafb !important; /* gray-50 */
+  }
+
+  :root:not(.dark) .bg-zinc-800\/30 {
+    background-color: #f9fafb !important; /* gray-50 */
+  }
+
+  :root:not(.dark) .bg-blue-500\/10 {
+    background-color: #dbeafe !important; /* blue-100 */
+  }
+
+  :root:not(.dark) .bg-green-500\/10 {
+    background-color: #d1fae5 !important; /* green-100 */
+  }
+
+  :root:not(.dark) .bg-primary-500\/20 {
+    background-color: #e0e7ff !important; /* indigo-100 */
+  }
+
+  :root:not(.dark) .bg-blue-500\/20 {
+    background-color: #dbeafe !important; /* blue-100 */
+  }
+
+  :root:not(.dark) .bg-purple-500\/20 {
+    background-color: #f3e8ff !important; /* purple-100 */
+  }
+
+  :root:not(.dark) .bg-indigo-500\/20 {
+    background-color: #e0e7ff !important; /* indigo-100 */
+  }
+
+  /* Border overrides for light theme */
+  :root:not(.dark) .border-slate-700,
+  :root:not(.dark) .border-zinc-700,
+  :root:not(.dark) .border-zinc-800 {
+    border-color: #e5e7eb !important; /* gray-200 */
+  }
+
+  :root:not(.dark) .border-blue-500\/20 {
+    border-color: #bfdbfe !important; /* blue-200 */
+  }
+
+  :root:not(.dark) .border-green-500\/20 {
+    border-color: #a7f3d0 !important; /* green-200 */
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-zinc-900;
+  }
+
+  :root:not(.dark) ::-webkit-scrollbar-track {
+    @apply bg-gray-200;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-zinc-700 rounded-full hover:bg-zinc-600;
+  }
+
+  :root:not(.dark) ::-webkit-scrollbar-thumb {
+    @apply bg-gray-400 hover:bg-gray-500;
+  }
+}
+
+@layer components {
+  /* Glassmorphism card effect */
+  .glass-card {
+    @apply bg-zinc-900/50 backdrop-blur-md border border-zinc-800/50 rounded-lg;
+  }
+
+  /* Light theme glass card */
+  :root:not(.dark) .glass-card {
+    @apply bg-white border-gray-200 shadow-md;
+    backdrop-filter: none;
+  }
+
+  /* Ensure text is visible in glass cards */
+  :root:not(.dark) .glass-card * {
+    color: inherit;
+  }
+
+  :root:not(.dark) .glass-card .text-slate-100,
+  :root:not(.dark) .glass-card .text-slate-200,
+  :root:not(.dark) .glass-card .text-slate-300 {
+    color: #111827 !important; /* gray-900 */
+  }
+
+  :root:not(.dark) .glass-card .text-slate-400 {
+    color: #4b5563 !important; /* gray-600 */
+  }
+
+  :root:not(.dark) .glass-card .text-slate-500 {
+    color: #6b7280 !important; /* gray-500 */
+  }
+
+  /* Zebra stripe pattern for tables */
+  .table-zebra tbody tr:nth-child(even) {
+    @apply bg-zinc-800/30;
+  }
+
+  :root:not(.dark) .table-zebra tbody tr:nth-child(even) {
+    @apply bg-gray-50;
+  }
+
+  .table-zebra tbody tr:hover {
+    @apply bg-zinc-800/50 transition-colors;
+  }
+
+  :root:not(.dark) .table-zebra tbody tr:hover {
+    @apply bg-gray-100;
+  }
+
+  /* Table text colors */
+  :root:not(.dark) .table-zebra th {
+    color: #374151 !important; /* gray-700 */
+  }
+
+  :root:not(.dark) .table-zebra td {
+    color: #111827 !important; /* gray-900 */
+  }
+
+  /* Monospace numbers for financial data */
+  .mono-number {
+    @apply font-mono tabular-nums;
+  }
+
+  /* Status badges */
+  .badge-success {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-success;
+  }
+
+  :root:not(.dark) .badge-success {
+    @apply bg-emerald-100 text-emerald-700;
+  }
+
+  .badge-danger {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-danger;
+  }
+
+  :root:not(.dark) .badge-danger {
+    @apply bg-red-100 text-red-700;
+  }
+
+  .badge-warning {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-warning;
+  }
+
+  :root:not(.dark) .badge-warning {
+    @apply bg-amber-100 text-amber-700;
+  }
+
+  .badge-info {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary;
+  }
+
+  :root:not(.dark) .badge-info {
+    @apply bg-blue-100 text-blue-700;
+  }
+
+  /* Button styles */
+  .btn-primary {
+    @apply bg-primary hover:bg-indigo-600 text-white font-medium px-4 py-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-zinc-950;
+  }
+
+  :root:not(.dark) .btn-primary {
+    @apply focus:ring-offset-white;
+  }
+
+  .btn-secondary {
+    @apply bg-zinc-800 hover:bg-zinc-700 text-slate-100 font-medium px-4 py-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 focus:ring-offset-zinc-950;
+  }
+
+  :root:not(.dark) .btn-secondary {
+    @apply bg-gray-200 hover:bg-gray-300 text-gray-900 focus:ring-offset-white;
+  }
+
+  .btn-danger {
+    @apply bg-danger hover:bg-rose-700 text-white font-medium px-4 py-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-danger focus:ring-offset-2 focus:ring-offset-zinc-950;
+  }
+
+  :root:not(.dark) .btn-danger {
+    @apply focus:ring-offset-white;
+  }
+
+  /* Input styles */
+  .input-field {
+    @apply w-full bg-zinc-900 border border-zinc-700 text-slate-100 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-zinc-500;
+  }
+
+  :root:not(.dark) .input-field {
+    @apply bg-white border-gray-300 text-gray-900 placeholder:text-gray-400;
+  }
+
+  /* Sidebar width */
+  .sidebar-width {
+    @apply w-64;
+  }
+
+  /* WhatsApp indicator */
+  .whatsapp-badge {
+    @apply inline-flex items-center gap-1 text-xs text-success;
+  }
+
+  /* Hover states for light theme */
+  :root:not(.dark) .hover\:bg-slate-800\/30:hover {
+    background-color: #f3f4f6 !important; /* gray-100 */
+  }
+
+  :root:not(.dark) .hover\:bg-zinc-800:hover {
+    background-color: #f3f4f6 !important; /* gray-100 */
+  }
+}
+
+@layer utilities {
+  /* Custom scrollbar for specific elements */
+  .custom-scrollbar::-webkit-scrollbar {
+    @apply w-1.5;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-zinc-900/50 rounded;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-zinc-700/50 rounded hover:bg-zinc-600/50;
+  }
+}

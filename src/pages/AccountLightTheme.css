@@ -1,0 +1,21 @@
+/* Light theme overrides for Account page */
+:root:not(.dark) .account-text-primary {
+  color: #111827 !important; /* gray-900 */
+}
+
+:root:not(.dark) .account-text-secondary {
+  color: #4b5563 !important; /* gray-600 */
+}
+
+:root:not(.dark) .account-text-tertiary {
+  color: #6b7280 !important; /* gray-500 */
+}
+
+:root:not(.dark) .account-bg-card {
+  background-color: #f9fafb !important; /* gray-50 */
+  border-color: #e5e7eb !important; /* gray-200 */
+}
+
+:root:not(.dark) .account-border {
+  border-color: #e5e7eb !important; /* gray-200 */
+}
