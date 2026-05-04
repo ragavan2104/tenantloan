@@ -46,11 +46,11 @@ const BorrowerCard = ({ borrower }: BorrowerCardProps) => {
           >
             View Details
           </Link>
-          {borrower.loan_status === 'active' && (
+          {(borrower.loan_status === 'active' || borrower.loan_status === 'completed') && (
             <Link
               to={`/borrowers/${borrower.id}/add-loan`}
               className="btn-secondary text-sm px-3 py-2 text-center flex items-center gap-1"
-              title="Add Additional Loan"
+              title={borrower.loan_status === 'completed' ? 'Add New Loan' : 'Add Additional Loan'}
             >
               <PlusIcon className="w-4 h-4" />
               <span>Add Loan</span>
