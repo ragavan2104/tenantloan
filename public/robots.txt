@@ -1,0 +1,10 @@
+# LendFlow - Private SaaS Application
+# This app requires authentication and should not be indexed
+
+User-agent: *
+Disallow: /
+
+# Allow only the public landing page (if you create one later)
+# Allow: /landing
+# Allow: /about
+# Allow: /pricing
