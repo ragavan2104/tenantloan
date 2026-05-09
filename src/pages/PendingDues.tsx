@@ -191,14 +191,7 @@ const PendingDues = () => {
           <p className="text-gray-600 dark:text-slate-400 mt-1">Track and manage pending payments</p>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={() => handleExport('excel')}
-            className="btn-secondary flex items-center gap-2"
-            disabled={!data?.borrowers || data.borrowers.length === 0}
-          >
-            <ArrowDownTrayIcon className="w-5 h-5" />
-            <span>Export Excel</span>
-          </button>
+          
           <button
             onClick={() => handleExport('pdf')}
             className="btn-secondary flex items-center gap-2"

@@ -145,13 +145,7 @@ const Payments = () => {
         </div>
         
         <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => handleExport('excel')}
-            className="btn-primary flex items-center gap-2"
-          >
-            <ArrowDownTrayIcon className="w-4 h-4" />
-            Excel
-          </button>
+         
           <button
             onClick={() => handleExport('pdf')}
             className="btn-secondary flex items-center gap-2"

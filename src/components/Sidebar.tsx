@@ -110,7 +110,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           {/* Logo */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-zinc-800 flex-shrink-0">
             <div>
-              <h1 className="text-xl font-bold text-primary">Loan SaaS</h1>
+              <h1 className="text-xl font-bold text-primary">Lend Flow</h1>
               <p className="text-xs text-gray-600 dark:text-slate-400 capitalize">{user?.role}</p>
             </div>
             <button

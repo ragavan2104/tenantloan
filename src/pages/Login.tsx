@@ -56,7 +56,7 @@ const Login = () => {
       <div className="w-full max-w-md">
         <div className="glass-card p-6 sm:p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-primary mb-2">Loan SaaS</h1>
+            <h1 className="text-3xl font-bold text-primary mb-2">Lend Flow</h1>
             <p className="text-slate-400">Tenant Login</p>
           </div>
 
