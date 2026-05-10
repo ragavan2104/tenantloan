@@ -48,7 +48,8 @@ const PendingDues = () => {
   const [branchFilter, setBranchFilter] = useState<string>('');
   const [search, setSearch] = useState<string>('');
   const [fromDate, setFromDate] = useState<string>('');
-  const [toDate, setToDate] = useState<string>('');
+  // Set toDate to today by default
+  const [toDate, setToDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [showFilters, setShowFilters] = useState(false);
 
   // Get branches for filter (owner only)
