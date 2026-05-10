@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { borrowerApi } from '../api/borrowerApi';
 import { branchApi } from '../api/branchApi';
@@ -11,9 +11,19 @@ import { RootState } from '../store';
 const Borrowers = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [loanStatus, setLoanStatus] = useState<string>('');
   const [branchFilter, setBranchFilter] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
+
+  // Debounce search query - wait 500ms after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Get branches for filter (owner only)
   const { data: branches } = useQuery({
@@ -23,8 +33,8 @@ const Borrowers = () => {
   });
 
   const { data: borrowers, isLoading } = useQuery({
-    queryKey: ['borrowers', loanStatus, branchFilter, searchQuery],
-    queryFn: () => borrowerApi.getAll(100, 0, loanStatus, branchFilter, searchQuery),
+    queryKey: ['borrowers', loanStatus, branchFilter, debouncedSearch],
+    queryFn: () => borrowerApi.getAll(100, 0, loanStatus, branchFilter, debouncedSearch),
   });
 
   const handleClearFilters = () => {
@@ -73,6 +83,11 @@ const Borrowers = () => {
             className="input-field pl-10"
             placeholder="Search by name or phone number..."
           />
+          {searchQuery && searchQuery !== debouncedSearch && (
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+            </div>
+          )}
         </div>
 
         {/* Filter Toggle Button */}
