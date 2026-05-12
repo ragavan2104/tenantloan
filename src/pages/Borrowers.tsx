@@ -60,13 +60,22 @@ const Borrowers = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-100">Borrowers</h1>
           <p className="text-slate-400 mt-1">Manage all borrowers and their loans</p>
         </div>
-        <Link
-          to="/borrowers/add"
-          className="btn-primary flex items-center gap-2 justify-center"
-        >
-          <PlusIcon className="w-5 h-5" />
-          <span>Add Borrower</span>
-        </Link>
+        <div className="flex gap-3">
+          <Link
+            to="/borrowers/add-gold-loan"
+            className="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-lg hover:from-amber-600 hover:to-yellow-600 transition-all shadow-lg shadow-amber-500/25 flex items-center gap-2 justify-center font-medium"
+          >
+            <span>💰</span>
+            <span>Add Gold Loan</span>
+          </Link>
+          <Link
+            to="/borrowers/add"
+            className="btn-primary flex items-center gap-2 justify-center"
+          >
+            <PlusIcon className="w-5 h-5" />
+            <span>Add Borrower</span>
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}

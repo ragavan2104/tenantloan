@@ -194,6 +194,21 @@ const LoanDetails = () => {
                 </p>
               </div>
             </div>
+            {loan.maturity_date && (
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="w-4 h-4 text-primary" />
+                <div>
+                  <p className="text-xs text-slate-500 mb-1">Maturity Date</p>
+                  <p className="text-sm font-medium text-slate-100">
+                    {new Date(loan.maturity_date).toLocaleDateString('en-IN', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    })}
+                  </p>
+                </div>
+              </div>
+            )}
             <div>
               <p className="text-xs text-slate-500 mb-1">Amount Paid</p>
               <p className="text-lg font-bold text-success mono-number">

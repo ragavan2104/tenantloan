@@ -30,6 +30,7 @@ import AssignmentDetails from './pages/AssignmentDetails';
 import MyAssignments from './pages/MyAssignments';
 import Payments from './pages/Payments';
 import PendingDues from './pages/PendingDues';
+import PendingGoldDues from './pages/PendingGoldDues';
 import Branches from './pages/Branches';
 import CreateBranch from './pages/CreateBranch';
 import Workers from './pages/Workers';
@@ -38,6 +39,10 @@ import CompanySettings from './pages/CompanySettings';
 import Reports from './pages/Reports';
 import Account from './pages/Account';
 import GoldLockers from './pages/GoldLockers';
+import AddGoldLoan from './pages/AddGoldLoan';
+import GoldLoans from './pages/GoldLoans';
+import GoldLoanPayment from './pages/GoldLoanPayment';
+import GoldLoanDetail from './pages/GoldLoanDetail';
 
 function App() {
   return (
@@ -96,15 +101,20 @@ function MainLayout() {
             <Route path="/dashboard" element={<EnhancedDashboard />} />
             <Route path="/borrowers" element={<Borrowers />} />
             <Route path="/borrowers/add" element={<AddBorrower />} />
+            <Route path="/borrowers/add-gold-loan" element={<AddGoldLoan />} />
+            <Route path="/gold-loans" element={<GoldLoans />} />
+            <Route path="/gold-loans/:id" element={<GoldLoanDetail />} />
+            <Route path="/gold-loans/:id/pay" element={<GoldLoanPayment />} />
+            <Route path="/borrowers/assignments" element={<BorrowerAssignments />} />
             <Route path="/borrowers/:id/add-loan" element={<AddAdditionalLoan />} />
             <Route path="/borrowers/:borrowerId/loans/:loanId" element={<LoanDetails />} />
-            <Route path="/borrowers/assignments" element={<BorrowerAssignments />} />
             <Route path="/borrowers/:id" element={<BorrowerDetail />} />
             <Route path="/recent-loans" element={<ProtectedRoute allowedRoles={['owner', 'branch_admin']}><RecentLoans /></ProtectedRoute>} />
             <Route path="/assignment-details" element={<ProtectedRoute allowedRoles={['owner', 'branch_admin']}><AssignmentDetails /></ProtectedRoute>} />
             <Route path="/my-assignments" element={<ProtectedRoute allowedRoles={['worker']}><MyAssignments /></ProtectedRoute>} />
             <Route path="/payments" element={<Payments />} />
             <Route path="/pending-dues" element={<PendingDues />} />
+            <Route path="/pending-gold-dues" element={<PendingGoldDues />} />
             <Route path="/branches" element={<ProtectedRoute allowedRoles={['owner']}><Branches /></ProtectedRoute>} />
             <Route path="/branches/create" element={<ProtectedRoute allowedRoles={['owner']}><CreateBranch /></ProtectedRoute>} />
             <Route path="/users" element={<ProtectedRoute allowedRoles={['owner']}><Users /></ProtectedRoute>} />

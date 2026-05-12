@@ -28,19 +28,12 @@ const AddBorrower = () => {
   });
 
   const [countryCode, setCountryCode] = useState('+91'); // Default to India
-  const [loanType, setLoanType] = useState<'personal' | 'bike' | 'car' | 'gold'>('personal');
+  const [loanType, setLoanType] = useState<'personal' | 'bike' | 'car'>('personal');
   const [emiPreview, setEmiPreview] = useState<any>(null);
   const [error, setError] = useState('');
   const [phoneHistory, setPhoneHistory] = useState<any>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [checkingPhone, setCheckingPhone] = useState(false);
-
-  // Gold loan specific states
-  const [goldWeight, setGoldWeight] = useState<number>(0);
-  const [goldPurity, setGoldPurity] = useState<'18K' | '22K' | '24K'>('22K');
-  const [calculatedGoldValue, setCalculatedGoldValue] = useState<number>(0);
-  const [maxLoanAmount, setMaxLoanAmount] = useState<number>(0);
-  const [selectedLocker, setSelectedLocker] = useState<string>('');
 
   // Common country codes
   const countryCodes = [
@@ -63,13 +56,6 @@ const AddBorrower = () => {
     enabled: !!user?.companyId,
   });
 
-  // Get available lockers for gold loans
-  const { data: availableLockers = [] } = useQuery({
-    queryKey: ['lockers', 'available'],
-    queryFn: () => lockerApi.getAll('available'),
-    enabled: loanType === 'gold',
-  });
-
   // Calculate EMI preview
   useEffect(() => {
     const loanAmount = typeof formData.loan_amount === 'string' ? parseFloat(formData.loan_amount) : formData.loan_amount;
@@ -87,28 +73,6 @@ const AddBorrower = () => {
       }).then(setEmiPreview).catch(console.error);
     }
   }, [formData.loan_amount, formData.tenure_months, companySettings, loanType]);
-
-  // Calculate gold loan amount based on weight and purity
-  useEffect(() => {
-    if (loanType === 'gold' && goldWeight > 0 && companySettings?.settings) {
-      const goldRates = (companySettings.settings as any).gold_rates || { '18K': 5000, '22K': 6000, '24K': 7000 };
-      const ratePerGram = goldRates[goldPurity] || 6000;
-      
-      // Calculate gold value - ensure proper number multiplication
-      const goldValue = Number(goldWeight) * Number(ratePerGram);
-      setCalculatedGoldValue(Math.round(goldValue));
-      
-      // Set max loan as gold value (no LTV or cap)
-      const maxLoan = Math.round(goldValue);
-      setMaxLoanAmount(maxLoan);
-      
-      // Auto-set loan amount (don't exceed max)
-      const currentLoanAmount = typeof formData.loan_amount === 'string' ? parseFloat(formData.loan_amount) : formData.loan_amount;
-      if (currentLoanAmount > maxLoan) {
-        setFormData({ ...formData, loan_amount: maxLoan });
-      }
-    }
-  }, [goldWeight, goldPurity, loanType, companySettings]);
 
   const createMutation = useMutation({
     mutationFn: borrowerApi.create,
@@ -152,6 +116,7 @@ const AddBorrower = () => {
     
     // Combine country code with phone number
     const fullPhone = `${countryCode}${formData.phone}`;
+
     createMutation.mutate({ ...formData, phone: fullPhone, loan_type: loanType });
   };
 
@@ -349,7 +314,7 @@ const AddBorrower = () => {
               <label className="block text-sm font-medium text-slate-300 mb-3">
                 Select Loan Type *
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <button
                   type="button"
                   onClick={() => setLoanType('personal')}
@@ -391,20 +356,23 @@ const AddBorrower = () => {
                   <div className="text-sm font-semibold">Car</div>
                   <div className="text-xs mt-1">Secured</div>
                 </button>
-                
-                <button
-                  type="button"
-                  onClick={() => setLoanType('gold')}
-                  className={`p-4 rounded-lg border-2 transition-all ${
-                    loanType === 'gold'
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-zinc-800 bg-surface-gray-light text-slate-400 hover:border-zinc-700'
-                  }`}
-                >
-                  <LoanTypeIcon type="gold" size="lg" className="mb-2" />
-                  <div className="text-sm font-semibold">Gold</div>
-                  <div className="text-xs mt-1">Secured</div>
-                </button>
+              </div>
+              
+              {/* Gold Loan Notice */}
+              <div className="mt-4 p-4 bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border border-amber-500/30 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">💰</span>
+                  <div>
+                    <p className="text-sm font-medium text-amber-400">Want to create a Gold Loan?</p>
+                    <p className="text-xs text-slate-400 mt-1">Gold loans have a dedicated page with bullet repayment options.</p>
+                    <Link 
+                      to="/borrowers/add-gold-loan"
+                      className="inline-block mt-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-sm rounded-lg hover:from-amber-600 hover:to-yellow-600 transition-all"
+                    >
+                      Go to Gold Loan Page →
+                    </Link>
+                  </div>
+                </div>
               </div>
             </div>
             
@@ -472,114 +440,6 @@ const AddBorrower = () => {
                 </div>
               </div>
             )}
-
-            {/* Gold Loan Details */}
-            {loanType === 'gold' && (
-              <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                <h3 className="text-sm font-semibold text-yellow-400 mb-4">Gold Details</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Gold Item Description *
-                    </label>
-                    <input
-                      type="text"
-                      className="input-field"
-                      placeholder="e.g., Gold chain, Gold ring"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Weight (grams) *
-                    </label>
-                    <input
-                      type="number"
-                      className="input-field"
-                      placeholder="e.g., 50"
-                      min="0.1"
-                      step="0.1"
-                      value={goldWeight || ''}
-                      onChange={(e) => setGoldWeight(parseFloat(e.target.value) || 0)}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Purity *
-                    </label>
-                    <select 
-                      className="input-field" 
-                      value={goldPurity}
-                      onChange={(e) => setGoldPurity(e.target.value as '18K' | '22K' | '24K')}
-                      required
-                    >
-                      <option value="18K">18K (75% pure)</option>
-                      <option value="22K">22K (91.6% pure)</option>
-                      <option value="24K">24K (99.9% pure)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Gold Rate per gram (₹)
-                    </label>
-                    <input
-                      type="text"
-                      value={`₹${((companySettings?.settings as any)?.gold_rates?.[goldPurity] || 6000).toLocaleString()}`}
-                      className="input-field"
-                      disabled
-                    />
-                    <p className="text-xs text-slate-500 mt-1">Set in Company Settings</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Repayment Type *
-                    </label>
-                    <select className="input-field" required>
-                      <option value="emi">EMI (Monthly)</option>
-                      <option value="bullet">Bullet (One-time)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Storage Locker *
-                    </label>
-                    <select 
-                      className="input-field"
-                      value={selectedLocker}
-                      onChange={(e) => setSelectedLocker(e.target.value)}
-                      required
-                    >
-                      <option value="">Select a locker</option>
-                      {availableLockers.map((locker) => (
-                        <option key={locker.id} value={locker.id}>
-                          {locker.locker_number} - {locker.location}
-                        </option>
-                      ))}
-                    </select>
-                    {availableLockers.length === 0 && (
-                      <p className="text-xs text-danger mt-1">
-                        No available lockers. Please add lockers in Gold Lockers page.
-                      </p>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Gold Value Calculation */}
-                {goldWeight > 0 && (
-                  <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded">
-                    <h4 className="text-xs font-semibold text-yellow-400 mb-2">Calculation:</h4>
-                    <div className="text-xs text-slate-300 space-y-1">
-                      <p>• Gold Value: {goldWeight}g × ₹{((companySettings?.settings as any)?.gold_rates?.[goldPurity] || 6000).toLocaleString()} = ₹{calculatedGoldValue.toLocaleString()}</p>
-                      <p className="font-semibold text-yellow-400 mt-2 flex items-center gap-2">
-                        <LoanTypeIcon type="gold" size="sm" className="text-yellow-400" />
-                        <span>Maximum Loan Amount: ₹{maxLoanAmount.toLocaleString()}</span>
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -595,14 +455,8 @@ const AddBorrower = () => {
                   placeholder="100000"
                   min="1000"
                   step="1000"
-                  max={loanType === 'gold' && maxLoanAmount > 0 ? maxLoanAmount : undefined}
                   required
                 />
-                {loanType === 'gold' && maxLoanAmount > 0 && (
-                  <p className="text-xs text-yellow-400 mt-1">
-                    Maximum: ₹{maxLoanAmount.toLocaleString()} (based on gold value)
-                  </p>
-                )}
               </div>
 
               <div>

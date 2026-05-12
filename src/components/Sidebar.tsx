@@ -4,6 +4,7 @@ import { RootState } from '../store';
 import { logout } from '../store/authSlice';
 import { useNavigate } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
+import { useState } from 'react';
 import {
   HomeIcon,
   UserGroupIcon,
@@ -17,6 +18,8 @@ import {
   CreditCardIcon,
   ClockIcon,
   LockClosedIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 
 interface SidebarProps {
@@ -29,6 +32,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
+  const [goldMenuOpen, setGoldMenuOpen] = useState(false);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -36,6 +40,14 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   };
 
   const isActive = (path: string) => location.pathname === path;
+  
+  // Check if any gold submenu item is active
+  const isGoldSectionActive = () => {
+    return location.pathname === '/gold-loans' || 
+           location.pathname === '/pending-gold-dues' || 
+           location.pathname === '/gold-lockers' ||
+           location.pathname.startsWith('/gold-loans/');
+  };
 
   // Menu items based on role
   const getMenuItems = () => {
@@ -46,13 +58,12 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         { path: '/branches', icon: BuildingOfficeIcon, label: 'Branches' },
         { path: '/users', icon: UsersIcon, label: 'Users' },
         { path: '/borrowers', icon: UserGroupIcon, label: 'All Borrowers' },
+        { type: 'gold-menu', icon: LockClosedIcon, label: '💰 Gold', isGold: true },
         { path: '/recent-loans', icon: ClockIcon, label: 'Recent Loans' },
         { path: '/borrowers/assignments', icon: UserGroupIcon, label: 'Assign Borrowers' },
         { path: '/assignment-details', icon: ChartBarIcon, label: 'Assignment Details' },
         { path: '/pending-dues', icon: ClockIcon, label: 'Pending Dues' },
         { path: '/payments', icon: CurrencyRupeeIcon, label: 'All Payments' },
-        { path: '/gold-lockers', icon: LockClosedIcon, label: 'Gold Lockers' },
-       
         { path: '/account', icon: CreditCardIcon, label: 'Account' },
         { path: '/settings', icon: Cog6ToothIcon, label: 'Company Settings' },
       ];
@@ -63,14 +74,13 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       return [
         { path: '/dashboard', icon: HomeIcon, label: 'Dashboard' },
         { path: '/borrowers', icon: UserGroupIcon, label: 'Borrowers' },
+        { type: 'gold-menu', icon: LockClosedIcon, label: '💰 Gold', isGold: true },
         { path: '/recent-loans', icon: ClockIcon, label: 'Recent Loans' },
         { path: '/borrowers/assignments', icon: UserGroupIcon, label: 'Assign Borrowers' },
         { path: '/assignment-details', icon: ChartBarIcon, label: 'Assignment Details' },
         { path: '/pending-dues', icon: ClockIcon, label: 'Pending Dues' },
         { path: '/payments', icon: CurrencyRupeeIcon, label: 'Payments' },
-        { path: '/gold-lockers', icon: LockClosedIcon, label: 'Gold Lockers' },
         { path: '/workers', icon: UsersIcon, label: 'Workers' },
-    
       ];
     }
 
@@ -80,6 +90,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         { path: '/dashboard', icon: HomeIcon, label: 'Dashboard' },
         { path: '/my-assignments', icon: UserGroupIcon, label: 'My Assignments' },
         { path: '/borrowers', icon: UserGroupIcon, label: 'Borrowers' },
+        { type: 'gold-menu', icon: LockClosedIcon, label: '💰 Gold', isGold: true },
         { path: '/pending-dues', icon: ClockIcon, label: 'Pending Dues' },
         { path: '/payments', icon: CurrencyRupeeIcon, label: 'Payments' },
       ];
@@ -87,6 +98,12 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
     return [];
   };
+
+  const goldSubMenuItems = [
+    { path: '/gold-loans', label: 'Gold Loans' },
+    { path: '/pending-gold-dues', label: 'Pending Gold Dues' },
+    { path: '/gold-lockers', label: 'Gold Lockers' },
+  ];
 
   const menuItems = getMenuItems();
 
@@ -126,8 +143,62 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           </div>
 
           {/* Navigation - Scrollable */}
-          <nav className="flex-1 p-4 space-y-2 overflow-y-auto">{/* Menu items */}
-            {menuItems.map((item) => {
+          <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+            {menuItems.map((item, index) => {
+              // Handle Gold Menu with dropdown
+              if (item.type === 'gold-menu') {
+                const Icon = item.icon;
+                const isGoldActive = isGoldSectionActive();
+                
+                return (
+                  <div key={`gold-menu-${index}`}>
+                    <button
+                      onClick={() => setGoldMenuOpen(!goldMenuOpen)}
+                      className={`
+                        w-full flex items-center justify-between gap-3 rounded-xl px-4 py-3 transition-all duration-200
+                        ${isGoldActive
+                          ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-lg shadow-amber-500/30'
+                          : 'bg-gradient-to-r from-amber-500/10 to-yellow-500/10 text-amber-600 dark:text-amber-400 hover:from-amber-500/20 hover:to-yellow-500/20 border border-amber-500/20'
+                        }
+                      `}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon className="w-5 h-5" />
+                        <span className="font-medium">{item.label}</span>
+                      </div>
+                      {goldMenuOpen ? (
+                        <ChevronDownIcon className="w-4 h-4" />
+                      ) : (
+                        <ChevronRightIcon className="w-4 h-4" />
+                      )}
+                    </button>
+                    
+                    {/* Submenu */}
+                    {goldMenuOpen && (
+                      <div className="mt-1 ml-4 space-y-1 border-l-2 border-amber-500/30 pl-4">
+                        {goldSubMenuItems.map((subItem) => (
+                          <Link
+                            key={subItem.path}
+                            to={subItem.path}
+                            onClick={() => onClose()}
+                            className={`
+                              block rounded-lg px-4 py-2 text-sm transition-all duration-200
+                              ${isActive(subItem.path)
+                                ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 font-medium'
+                                : 'text-slate-600 dark:text-slate-400 hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400'
+                              }
+                            `}
+                          >
+                            {subItem.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              
+              // Handle regular menu items
               const Icon = item.icon;
               return (
                 <Link

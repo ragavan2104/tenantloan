@@ -1,10 +1,39 @@
 import axiosInstance from './axiosInstance';
 
+export interface GoldItem {
+  description: string;
+  weight_grams: number;
+  purity: '18K' | '22K' | '24K';
+}
+
+export interface CollateralDetails {
+  // For bike/car loans
+  vehicle_make?: string;
+  vehicle_model?: string;
+  registration_number?: string;
+  rc_book_number?: string;
+  year?: number;
+  vehicle_value?: number;
+  down_payment?: number;
+  
+  // For gold loans
+  gold_items?: GoldItem[];
+  total_gold_weight?: number;
+  gold_rate_per_gram?: number;
+  ltv_percentage?: number;
+  storage_location?: string;
+  locker_number?: string;
+  gold_value?: number;
+}
+
 export interface Borrower {
   id: string;
   name: string;
   phone: string;
   address: string;
+  loan_type?: 'personal' | 'bike' | 'car' | 'gold';
+  repayment_type?: 'emi' | 'bullet';
+  collateral?: CollateralDetails;
   // Loan fields - optional for compatibility with separate loans structure
   loan_amount?: number | null;
   interest_rate?: number | null;
@@ -31,7 +60,10 @@ export interface CreateBorrowerRequest {
   loan_amount: number;
   tenure_months: number;
   start_date: string;
+  maturity_date?: string;
   loan_type?: 'personal' | 'bike' | 'car' | 'gold';
+  repayment_type?: 'emi' | 'bullet';
+  collateral?: CollateralDetails;
 }
 
 export interface Payment {

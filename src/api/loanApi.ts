@@ -1,9 +1,38 @@
 import axiosInstance from './axiosInstance';
 
+export interface GoldItem {
+  description: string;
+  weight_grams: number;
+  purity: '18K' | '22K' | '24K';
+}
+
+export interface CollateralDetails {
+  // For bike/car loans
+  vehicle_make?: string;
+  vehicle_model?: string;
+  registration_number?: string;
+  rc_book_number?: string;
+  year?: number;
+  vehicle_value?: number;
+  down_payment?: number;
+  
+  // For gold loans
+  gold_items?: GoldItem[];
+  total_gold_weight?: number;
+  gold_rate_per_gram?: number;
+  ltv_percentage?: number;
+  storage_location?: string;
+  locker_number?: string;
+  gold_value?: number;
+}
+
 export interface Loan {
   id: string;
   borrower_id: string;
   loan_number: number;
+  loan_type?: 'personal' | 'bike' | 'car' | 'gold';
+  repayment_type?: 'emi' | 'bullet';
+  collateral?: CollateralDetails;
   loan_amount: number;
   interest_rate: number;
   interest_type: string;
@@ -13,6 +42,7 @@ export interface Loan {
   amount_paid: number;
   outstanding_balance: number;
   start_date: string;
+  maturity_date?: string | null;
   next_due_date: string | null;
   loan_status: string;
   added_by: string;
@@ -35,8 +65,9 @@ export interface AddLoanRequest {
   loan_amount: number;
   tenure_months: number;
   start_date: string;
-  loan_type?: string;
-  collateral?: any;
+  loan_type?: 'personal' | 'bike' | 'car' | 'gold';
+  repayment_type?: 'emi' | 'bullet';
+  collateral?: CollateralDetails;
   borrower_name?: string;
 }
 
@@ -78,15 +109,21 @@ export const loanApi = {
     return response.data;
   },
 
-  // Calculate EMI (existing endpoint)
+  // Calculate EMI or bullet payment
   calculate: async (data: {
     principal: number;
     interest_rate: number;
     interest_type: string;
     tenure_months: number;
+    repayment_type?: 'emi' | 'bullet';
   }): Promise<any> => {
     const response = await axiosInstance.post('/loans/calculate', data);
-    return response.data;
+    const payload = response.data || {};
+    return {
+      ...payload,
+      // Backend returns `monthly_payment`; frontend pages consume `monthly_emi`.
+      monthly_emi: payload.monthly_emi ?? payload.monthly_payment ?? 0,
+    };
   },
 
   // Get loan schedule

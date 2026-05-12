@@ -28,13 +28,14 @@ const CompanySettings = () => {
       personal: { interest_rate: 18, interest_type: 'flat' },
       bike: { interest_rate: 15, interest_type: 'flat' },
       car: { interest_rate: 12, interest_type: 'flat' },
-      gold: { interest_rate: 10, interest_type: 'flat' },
+      gold: { interest_rate: 12, interest_type: 'flat' },
     },
     gold_rates: {
       '18K': 5000,
       '22K': 6000,
       '24K': 7000,
     },
+    gold_ltv_percentage: 75,
   });
 
   useEffect(() => {
@@ -51,13 +52,14 @@ const CompanySettings = () => {
           personal: { interest_rate: 18, interest_type: 'flat' },
           bike: { interest_rate: 15, interest_type: 'flat' },
           car: { interest_rate: 12, interest_type: 'flat' },
-          gold: { interest_rate: 10, interest_type: 'flat' },
+          gold: { interest_rate: 12, interest_type: 'flat' },
         },
         gold_rates: (company.settings as any).gold_rates || {
           '18K': 5000,
           '22K': 6000,
           '24K': 7000,
         },
+        gold_ltv_percentage: (company.settings as any).gold_ltv_percentage || 75,
       });
     }
   }, [company]);
@@ -269,13 +271,21 @@ const CompanySettings = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
 
-            {/* Gold Loan */}
+        {/* Gold Loan Settings */}
+        <div className="glass-card p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <LoanTypeIcon type="gold" size="lg" className="text-yellow-500" />
+            <h2 className="text-xl font-semibold text-slate-100">Gold Loan Settings</h2>
+          </div>
+          <p className="text-sm text-slate-400 mb-6">Configure gold loan interest, rates and LTV</p>
+
+          <div className="space-y-6">
+            {/* Gold Loan Interest Rate */}
             <div className="p-4 bg-surface-gray-light rounded-lg border border-zinc-800">
-              <div className="flex items-center gap-2 mb-4">
-                <LoanTypeIcon type="gold" size="lg" className="text-primary" />
-                <h3 className="text-lg font-semibold text-slate-100">Gold Loan</h3>
-              </div>
+              <h3 className="text-sm font-semibold text-slate-300 mb-4">Interest Rate for Gold Loans</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">
@@ -314,24 +324,39 @@ const CompanySettings = () => {
                     className="input-field"
                     required
                   >
-                    <option value="flat">Flat Rate</option>
+                    <option value="flat">Flat Rate (Bullet Repayment)</option>
                     <option value="reducing_balance">Reducing Balance</option>
                   </select>
                 </div>
               </div>
+              <p className="text-xs text-slate-500 mt-2">
+                Gold loans use bullet repayment - interest-only monthly payments with principal due at maturity
+              </p>
             </div>
-          </div>
-        </div>
 
-        {/* Gold Loan Settings */}
-        <div className="glass-card p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <LoanTypeIcon type="gold" size="lg" className="text-yellow-500" />
-            <h2 className="text-xl font-semibold text-slate-100">Gold Loan Settings</h2>
-          </div>
-          <p className="text-sm text-slate-400 mb-6">Configure gold rates per purity level</p>
+            {/* LTV Setting */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Loan-to-Value (LTV) Percentage *
+              </label>
+              <input
+                type="number"
+                value={settings.gold_ltv_percentage}
+                onChange={(e) => setSettings({
+                  ...settings,
+                  gold_ltv_percentage: parseFloat(e.target.value)
+                })}
+                className="input-field max-w-xs"
+                min="1"
+                max="100"
+                step="1"
+                required
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Maximum loan amount as percentage of gold value (RBI guideline: max 75%)
+              </p>
+            </div>
 
-          <div className="space-y-6">
             {/* Gold Rates per Purity */}
             <div>
               <h3 className="text-sm font-semibold text-slate-300 mb-4">Gold Rate per Gram (₹)</h3>
@@ -398,12 +423,10 @@ const CompanySettings = () => {
                 <p>• Purity: 24K</p>
                 <p>• Rate per gram: ₹{settings.gold_rates['24K'].toLocaleString()}</p>
                 <p>• Gold Value: 10g × ₹{settings.gold_rates['24K'].toLocaleString()} = ₹{(10 * settings.gold_rates['24K']).toLocaleString()}</p>
+                <p>• LTV: {settings.gold_ltv_percentage}%</p>
                 <p className="font-semibold text-yellow-400 mt-2 flex items-center gap-2">
                   <LoanTypeIcon type="gold" size="sm" className="text-yellow-400" />
-                  <span>Maximum Loan Amount: ₹{(10 * settings.gold_rates['24K']).toLocaleString()}</span>
-                </p>
-                <p className="text-xs text-slate-400 mt-1">
-                  Loan amount equals full gold value (no LTV or cap applied)
+                  <span>Maximum Loan Amount: ₹{Math.round((10 * settings.gold_rates['24K'] * settings.gold_ltv_percentage / 100)).toLocaleString()}</span>
                 </p>
               </div>
             </div>

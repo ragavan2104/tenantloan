@@ -30,6 +30,7 @@ interface PendingDue {
   emi_amount: number;
   outstanding_amount: number;
   status: string;
+  maturity_date?: string;
 }
 
 interface PendingDuesResponse {
@@ -152,8 +153,8 @@ const PendingDues = () => {
       }
 
       generatePendingDuesPDF({
-        loans: data.loans,
-        summary: data.summary,
+        loans: displayLoans,
+        summary,
         companyName: companyData.name,
         reportType,
         filters: {
@@ -207,13 +208,26 @@ const PendingDues = () => {
     );
   }
 
-  const summary = data?.summary || {
+  // Defensive frontend guard: regular pending dues should not show gold loans.
+  const displayLoans = (data?.loans || []).filter((loan) => loan.loan_type !== 'gold');
+
+  const summary = displayLoans.reduce((acc, loan) => {
+    if (loan.status === 'overdue') {
+      acc.total_overdue += loan.emi_amount;
+      acc.count_overdue += 1;
+    } else {
+      acc.total_pending += loan.emi_amount;
+      acc.count_pending += 1;
+    }
+    acc.total_count += 1;
+    return acc;
+  }, {
     total_pending: 0,
     total_overdue: 0,
     count_pending: 0,
     count_overdue: 0,
     total_count: 0
-  };
+  });
 
   return (
     <div className="page-shell">
@@ -228,7 +242,7 @@ const PendingDues = () => {
           <button
             onClick={() => handleExport('pdf')}
             className="btn-secondary flex items-center gap-2"
-            disabled={!data?.loans || data.loans.length === 0}
+            disabled={displayLoans.length === 0}
           >
             <ArrowDownTrayIcon className="w-5 h-5" />
             <span>Export PDF</span>
@@ -374,7 +388,6 @@ const PendingDues = () => {
                 <option value="personal">Personal</option>
                 <option value="bike">Bike</option>
                 <option value="car">Car</option>
-                <option value="gold">Gold</option>
               </select>
             </div>
 
@@ -427,7 +440,7 @@ const PendingDues = () => {
 
       {/* Results */}
       <div className="glass-card p-6 bg-white dark:bg-zinc-900">
-        {data?.loans && data.loans.length > 0 ? (
+        {displayLoans.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -446,7 +459,7 @@ const PendingDues = () => {
                 </tr>
               </thead>
               <tbody>
-                {data.loans.map((loan) => (
+                {displayLoans.map((loan) => (
                   <tr key={`${loan.id}-${loan.loan_id}`} className="border-b border-gray-100 dark:border-zinc-800/50 hover:bg-gray-50 dark:hover:bg-zinc-800/30">
                     <td className="py-3 px-4">
                       <Link 
