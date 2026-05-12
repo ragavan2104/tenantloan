@@ -4,15 +4,19 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { borrowerApi, CreateBorrowerRequest } from '../api/borrowerApi';
 import { loanApi } from '../api/loanApi';
 import { companyApi } from '../api/companyApi';
+import { lockerApi } from '../api/lockerApi';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
+import { useToast } from '../context/ToastContext';
+import LoanTypeIcon from '../components/LoanTypeIcon';
 
 const AddBorrower = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useSelector((state: RootState) => state.auth);
+  const toast = useToast();
 
   const [formData, setFormData] = useState<CreateBorrowerRequest>({
     name: '',
@@ -24,24 +28,32 @@ const AddBorrower = () => {
   });
 
   const [countryCode, setCountryCode] = useState('+91'); // Default to India
+  const [loanType, setLoanType] = useState<'personal' | 'bike' | 'car' | 'gold'>('personal');
   const [emiPreview, setEmiPreview] = useState<any>(null);
   const [error, setError] = useState('');
   const [phoneHistory, setPhoneHistory] = useState<any>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [checkingPhone, setCheckingPhone] = useState(false);
 
+  // Gold loan specific states
+  const [goldWeight, setGoldWeight] = useState<number>(0);
+  const [goldPurity, setGoldPurity] = useState<'18K' | '22K' | '24K'>('22K');
+  const [calculatedGoldValue, setCalculatedGoldValue] = useState<number>(0);
+  const [maxLoanAmount, setMaxLoanAmount] = useState<number>(0);
+  const [selectedLocker, setSelectedLocker] = useState<string>('');
+
   // Common country codes
   const countryCodes = [
-    { code: '+91', country: 'India', flag: '🇮🇳' },
-    { code: '+1', country: 'USA/Canada', flag: '🇺🇸' },
-    { code: '+44', country: 'UK', flag: '🇬🇧' },
-    { code: '+971', country: 'UAE', flag: '🇦🇪' },
-    { code: '+966', country: 'Saudi Arabia', flag: '🇸🇦' },
-    { code: '+65', country: 'Singapore', flag: '🇸🇬' },
-    { code: '+60', country: 'Malaysia', flag: '🇲🇾' },
-    { code: '+61', country: 'Australia', flag: '🇦🇺' },
-    { code: '+81', country: 'Japan', flag: '🇯🇵' },
-    { code: '+86', country: 'China', flag: '🇨🇳' },
+    { code: '+91', country: 'India' },
+    { code: '+1', country: 'USA/Canada' },
+    { code: '+44', country: 'UK' },
+    { code: '+971', country: 'UAE' },
+    { code: '+966', country: 'Saudi Arabia' },
+    { code: '+65', country: 'Singapore' },
+    { code: '+60', country: 'Malaysia' },
+    { code: '+61', country: 'Australia' },
+    { code: '+81', country: 'Japan' },
+    { code: '+86', country: 'China' },
   ];
 
   // Get company settings (applies to all branches)
@@ -51,27 +63,80 @@ const AddBorrower = () => {
     enabled: !!user?.companyId,
   });
 
+  // Get available lockers for gold loans
+  const { data: availableLockers = [] } = useQuery({
+    queryKey: ['lockers', 'available'],
+    queryFn: () => lockerApi.getAll('available'),
+    enabled: loanType === 'gold',
+  });
+
   // Calculate EMI preview
   useEffect(() => {
     const loanAmount = typeof formData.loan_amount === 'string' ? parseFloat(formData.loan_amount) : formData.loan_amount;
     if (loanAmount > 0 && formData.tenure_months > 0 && companySettings?.settings) {
+      // Get loan type specific settings
+      const loanTypeSettings = (companySettings.settings as any).loan_type_settings?.[loanType];
+      const interestRate = loanTypeSettings?.interest_rate || companySettings.settings.interest_rate || 12;
+      const interestType = loanTypeSettings?.interest_type || companySettings.settings.interest_type || 'flat';
+      
       loanApi.calculate({
         principal: loanAmount,
-        interest_rate: companySettings.settings.interest_rate,
-        interest_type: companySettings.settings.interest_type,
+        interest_rate: interestRate,
+        interest_type: interestType,
         tenure_months: formData.tenure_months,
       }).then(setEmiPreview).catch(console.error);
     }
-  }, [formData.loan_amount, formData.tenure_months, companySettings]);
+  }, [formData.loan_amount, formData.tenure_months, companySettings, loanType]);
+
+  // Calculate gold loan amount based on weight and purity
+  useEffect(() => {
+    if (loanType === 'gold' && goldWeight > 0 && companySettings?.settings) {
+      const goldRates = (companySettings.settings as any).gold_rates || { '18K': 5000, '22K': 6000, '24K': 7000 };
+      const ratePerGram = goldRates[goldPurity] || 6000;
+      
+      // Calculate gold value - ensure proper number multiplication
+      const goldValue = Number(goldWeight) * Number(ratePerGram);
+      setCalculatedGoldValue(Math.round(goldValue));
+      
+      // Set max loan as gold value (no LTV or cap)
+      const maxLoan = Math.round(goldValue);
+      setMaxLoanAmount(maxLoan);
+      
+      // Auto-set loan amount (don't exceed max)
+      const currentLoanAmount = typeof formData.loan_amount === 'string' ? parseFloat(formData.loan_amount) : formData.loan_amount;
+      if (currentLoanAmount > maxLoan) {
+        setFormData({ ...formData, loan_amount: maxLoan });
+      }
+    }
+  }, [goldWeight, goldPurity, loanType, companySettings]);
 
   const createMutation = useMutation({
     mutationFn: borrowerApi.create,
-    onSuccess: () => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['borrowers'] });
-      navigate('/borrowers');
+      toast.success('Borrower and loan created successfully!');
+      
+      // Fetch the loans for this borrower to get the loan ID
+      try {
+        const loanSummary = await loanApi.getBorrowerLoans(data.id);
+        if (loanSummary.loans && loanSummary.loans.length > 0) {
+          // Navigate to the first loan's details page
+          const firstLoan = loanSummary.loans[0];
+          navigate(`/borrowers/${data.id}/loans/${firstLoan.id}`);
+        } else {
+          // Fallback to borrower detail page if no loans found
+          navigate(`/borrowers/${data.id}`);
+        }
+      } catch (error) {
+        console.error('Error fetching loans:', error);
+        // Fallback to borrower detail page on error
+        navigate(`/borrowers/${data.id}`);
+      }
     },
     onError: (err: any) => {
-      setError(err.response?.data?.detail || 'Failed to add borrower');
+      const errorMessage = err.response?.data?.detail || 'Failed to add borrower';
+      setError(errorMessage);
+      toast.error(errorMessage);
     },
   });
 
@@ -87,7 +152,7 @@ const AddBorrower = () => {
     
     // Combine country code with phone number
     const fullPhone = `${countryCode}${formData.phone}`;
-    createMutation.mutate({ ...formData, phone: fullPhone });
+    createMutation.mutate({ ...formData, phone: fullPhone, loan_type: loanType });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -154,14 +219,16 @@ const AddBorrower = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      <div className="flex items-center gap-4">
-        <Link to="/borrowers" className="p-2 hover:bg-surface-gray-light rounded-lg">
+    <div className="page-shell max-w-4xl mx-auto">
+      <div className="page-header">
+        <div className="flex items-center gap-4">
+        <Link to="/borrowers" className="rounded-xl p-2 transition-colors hover:bg-slate-100 dark:hover:bg-zinc-800">
           <ArrowLeftIcon className="w-5 h-5 text-slate-300" />
         </Link>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-100">Add Borrower</h1>
-          <p className="text-slate-400 mt-1">Create a new loan account</p>
+          <h1 className="page-title">Add Borrower</h1>
+          <p className="page-subtitle">Create a new loan account</p>
+        </div>
         </div>
       </div>
 
@@ -205,7 +272,7 @@ const AddBorrower = () => {
                   >
                     {countryCodes.map((cc) => (
                       <option key={cc.code} value={cc.code}>
-                        {cc.flag} {cc.code}
+                        {cc.code} - {cc.country}
                       </option>
                     ))}
                   </select>
@@ -228,7 +295,7 @@ const AddBorrower = () => {
                       ⚠️ Found {phoneHistory.total_loans} existing loan(s) for this number
                       {phoneHistory.borrowers.some((h: any) => h.borrower.loan_status === 'active') && (
                         <span className="block mt-1 text-danger font-semibold">
-                          🚫 Active loan exists - Cannot create new borrower
+                          Active loan exists - Cannot create new borrower
                         </span>
                       )}
                     </p>
@@ -276,6 +343,244 @@ const AddBorrower = () => {
           {/* Loan Details */}
           <div className="pt-6 border-t border-zinc-800">
             <h2 className="text-lg font-semibold text-slate-100 mb-4">Loan Details</h2>
+            
+            {/* Loan Type Selection */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-slate-300 mb-3">
+                Select Loan Type *
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setLoanType('personal')}
+                  className={`p-4 rounded-lg border-2 transition-all ${
+                    loanType === 'personal'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-zinc-800 bg-surface-gray-light text-slate-400 hover:border-zinc-700'
+                  }`}
+                >
+                  <LoanTypeIcon type="personal" size="lg" className="mb-2" />
+                  <div className="text-sm font-semibold">Personal</div>
+                  <div className="text-xs mt-1">Unsecured</div>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => setLoanType('bike')}
+                  className={`p-4 rounded-lg border-2 transition-all ${
+                    loanType === 'bike'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-zinc-800 bg-surface-gray-light text-slate-400 hover:border-zinc-700'
+                  }`}
+                >
+                  <LoanTypeIcon type="bike" size="lg" className="mb-2" />
+                  <div className="text-sm font-semibold">Bike</div>
+                  <div className="text-xs mt-1">Secured</div>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => setLoanType('car')}
+                  className={`p-4 rounded-lg border-2 transition-all ${
+                    loanType === 'car'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-zinc-800 bg-surface-gray-light text-slate-400 hover:border-zinc-700'
+                  }`}
+                >
+                  <LoanTypeIcon type="car" size="lg" className="mb-2" />
+                  <div className="text-sm font-semibold">Car</div>
+                  <div className="text-xs mt-1">Secured</div>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => setLoanType('gold')}
+                  className={`p-4 rounded-lg border-2 transition-all ${
+                    loanType === 'gold'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-zinc-800 bg-surface-gray-light text-slate-400 hover:border-zinc-700'
+                  }`}
+                >
+                  <LoanTypeIcon type="gold" size="lg" className="mb-2" />
+                  <div className="text-sm font-semibold">Gold</div>
+                  <div className="text-xs mt-1">Secured</div>
+                </button>
+              </div>
+            </div>
+            
+            {/* Vehicle Details (Bike/Car) */}
+            {(loanType === 'bike' || loanType === 'car') && (
+              <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                <h3 className="text-sm font-semibold text-blue-400 mb-4">Vehicle Details</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Vehicle Make *
+                    </label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="e.g., Honda, Maruti"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Vehicle Model *
+                    </label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="e.g., Activa, Swift"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Registration Number *
+                    </label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="e.g., TN01AB1234"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      RC Book Number *
+                    </label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="e.g., RC123456789"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Year of Manufacture
+                    </label>
+                    <input
+                      type="number"
+                      className="input-field"
+                      placeholder="e.g., 2022"
+                      min="1900"
+                      max={new Date().getFullYear() + 1}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Gold Loan Details */}
+            {loanType === 'gold' && (
+              <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                <h3 className="text-sm font-semibold text-yellow-400 mb-4">Gold Details</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Gold Item Description *
+                    </label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="e.g., Gold chain, Gold ring"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Weight (grams) *
+                    </label>
+                    <input
+                      type="number"
+                      className="input-field"
+                      placeholder="e.g., 50"
+                      min="0.1"
+                      step="0.1"
+                      value={goldWeight || ''}
+                      onChange={(e) => setGoldWeight(parseFloat(e.target.value) || 0)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Purity *
+                    </label>
+                    <select 
+                      className="input-field" 
+                      value={goldPurity}
+                      onChange={(e) => setGoldPurity(e.target.value as '18K' | '22K' | '24K')}
+                      required
+                    >
+                      <option value="18K">18K (75% pure)</option>
+                      <option value="22K">22K (91.6% pure)</option>
+                      <option value="24K">24K (99.9% pure)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Gold Rate per gram (₹)
+                    </label>
+                    <input
+                      type="text"
+                      value={`₹${((companySettings?.settings as any)?.gold_rates?.[goldPurity] || 6000).toLocaleString()}`}
+                      className="input-field"
+                      disabled
+                    />
+                    <p className="text-xs text-slate-500 mt-1">Set in Company Settings</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Repayment Type *
+                    </label>
+                    <select className="input-field" required>
+                      <option value="emi">EMI (Monthly)</option>
+                      <option value="bullet">Bullet (One-time)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Storage Locker *
+                    </label>
+                    <select 
+                      className="input-field"
+                      value={selectedLocker}
+                      onChange={(e) => setSelectedLocker(e.target.value)}
+                      required
+                    >
+                      <option value="">Select a locker</option>
+                      {availableLockers.map((locker) => (
+                        <option key={locker.id} value={locker.id}>
+                          {locker.locker_number} - {locker.location}
+                        </option>
+                      ))}
+                    </select>
+                    {availableLockers.length === 0 && (
+                      <p className="text-xs text-danger mt-1">
+                        No available lockers. Please add lockers in Gold Lockers page.
+                      </p>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Gold Value Calculation */}
+                {goldWeight > 0 && (
+                  <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded">
+                    <h4 className="text-xs font-semibold text-yellow-400 mb-2">Calculation:</h4>
+                    <div className="text-xs text-slate-300 space-y-1">
+                      <p>• Gold Value: {goldWeight}g × ₹{((companySettings?.settings as any)?.gold_rates?.[goldPurity] || 6000).toLocaleString()} = ₹{calculatedGoldValue.toLocaleString()}</p>
+                      <p className="font-semibold text-yellow-400 mt-2 flex items-center gap-2">
+                        <LoanTypeIcon type="gold" size="sm" className="text-yellow-400" />
+                        <span>Maximum Loan Amount: ₹{maxLoanAmount.toLocaleString()}</span>
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
@@ -290,8 +595,14 @@ const AddBorrower = () => {
                   placeholder="100000"
                   min="1000"
                   step="1000"
+                  max={loanType === 'gold' && maxLoanAmount > 0 ? maxLoanAmount : undefined}
                   required
                 />
+                {loanType === 'gold' && maxLoanAmount > 0 && (
+                  <p className="text-xs text-yellow-400 mt-1">
+                    Maximum: ₹{maxLoanAmount.toLocaleString()} (based on gold value)
+                  </p>
+                )}
               </div>
 
               <div>
@@ -319,7 +630,7 @@ const AddBorrower = () => {
                     </label>
                     <input
                       type="text"
-                      value={`${companySettings.settings.interest_rate}% per annum`}
+                      value={`${(companySettings.settings as any).loan_type_settings?.[loanType]?.interest_rate || companySettings.settings.interest_rate || 12}% per annum`}
                       className="input-field"
                       disabled
                     />
@@ -331,7 +642,7 @@ const AddBorrower = () => {
                     </label>
                     <input
                       type="text"
-                      value={companySettings.settings.interest_type}
+                      value={(companySettings.settings as any).loan_type_settings?.[loanType]?.interest_type || companySettings.settings.interest_type || 'flat'}
                       className="input-field capitalize"
                       disabled
                     />
@@ -476,7 +787,7 @@ const AddBorrower = () => {
               onClick={() => setShowHistory(false)}
               className="text-slate-400 hover:text-slate-200"
             >
-              ✕
+              &times;
             </button>
           </div>
 

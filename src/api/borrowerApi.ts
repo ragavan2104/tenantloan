@@ -31,6 +31,7 @@ export interface CreateBorrowerRequest {
   loan_amount: number;
   tenure_months: number;
   start_date: string;
+  loan_type?: 'personal' | 'bike' | 'car' | 'gold';
 }
 
 export interface Payment {

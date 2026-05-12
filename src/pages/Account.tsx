@@ -19,7 +19,10 @@ import {
   EnvelopeIcon,
   PhoneIcon,
   CurrencyRupeeIcon,
-} from '@heroicons/react/24/outline';
+} 
+from '@heroicons/react/24/outline';
+import Logo from '../components/Logo';
+
 
 interface PricingBreakdown {
   tier: number;
@@ -156,18 +159,20 @@ const Account = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="page-shell">
+      <div className="page-header">
       <div className="flex items-center gap-3">
         <CreditCardIcon className="w-8 h-8 text-primary" />
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100">Account & Subscription</h1>
-          <p className="text-gray-600 dark:text-slate-400 mt-1">Manage your subscription and account settings</p>
+          <h1 className="page-title">Account & Subscription</h1>
+          <p className="page-subtitle">Manage your subscription and account settings</p>
         </div>
+      </div>
       </div>
 
       {/* Expiry Alert */}
       {subscription && typeof subscription.days_until_expiry === 'number' && subscription.days_until_expiry <= 7 && (
-        <div className="glass-card p-6 border-l-4 border-danger">
+        <div className="page-card border-l-4 border-danger">
           <div className="flex items-start gap-3">
             <ExclamationTriangleIcon className="w-6 h-6 text-danger flex-shrink-0 mt-1" />
             <div className="flex-1">
@@ -188,15 +193,15 @@ const Account = () => {
 
       {/* Subscription Overview */}
       {subscription && (
-        <div className="glass-card p-6">
+        <div className="page-card">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-primary-500/20 rounded-lg">
                 <CreditCardIcon className="w-6 h-6 text-primary-400" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-slate-100">Subscription Details</h2>
-                <p className="text-sm text-slate-400">Your current plan and usage</p>
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Subscription Details</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Your current plan and usage</p>
               </div>
             </div>
             <span className={`px-4 py-2 text-sm font-medium rounded-full ${
@@ -210,18 +215,18 @@ const Account = () => {
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-            <div className="text-center p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+            <div className="metric-card text-center">
               <BuildingOfficeIcon className="w-8 h-8 text-primary-400 mx-auto mb-2" />
-              <p className="text-sm text-slate-400 mb-1">Branch Limit</p>
-              <p className="text-3xl font-bold text-slate-100">{subscription.branch_limit}</p>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Branch Limit</p>
+              <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{subscription.branch_limit}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
                 {company?.stats.total_branches || 0} in use
               </p>
             </div>
             
-            <div className="text-center p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+            <div className="metric-card text-center">
               <CalendarIcon className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-              <p className="text-sm text-slate-400 mb-1">Days Remaining</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Days Remaining</p>
               <p className={`text-3xl font-bold ${
                 typeof subscription.days_until_expiry === 'number' && subscription.days_until_expiry <= 7 
                   ? 'text-danger' 
@@ -229,29 +234,39 @@ const Account = () => {
               }`}>
                 {subscription.days_until_expiry !== null && subscription.days_until_expiry !== undefined ? subscription.days_until_expiry : 'N/A'}
               </p>
-              <p className="text-xs text-slate-500 mt-1">Until expiry</p>
+              <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">Until expiry</p>
             </div>
 
-            <div className="text-center p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+            <div className="metric-card text-center">
               <BanknotesIcon className="w-8 h-8 text-green-400 mx-auto mb-2" />
-              <p className="text-sm text-slate-400 mb-1">Payments Made</p>
-              <p className="text-3xl font-bold text-slate-100">{subscription.payment_history.length}</p>
-              <p className="text-xs text-slate-500 mt-1">Total transactions</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Payments Made</p>
+              <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{subscription.payment_history.length}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">Total transactions</p>
             </div>
 
-            <div className="text-center p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+            <div className="metric-card text-center">
               <ArrowTrendingUpIcon className="w-8 h-8 text-purple-400 mx-auto mb-2" />
-              <p className="text-sm text-slate-400 mb-1">Upgrade Requests</p>
-              <p className="text-3xl font-bold text-slate-100">{upgradeRequests?.length || 0}</p>
-              <p className="text-xs text-slate-500 mt-1">Submitted</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Upgrade Requests</p>
+              <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{upgradeRequests?.length || 0}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">Submitted</p>
             </div>
           </div>
 
           {/* Subscription Dates */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
             <div>
-              <p className="text-sm font-medium text-blue-400 mb-1">
-                {subscription.status === 'trial' ? '🎯 Trial Start Date' : '📅 Subscription Start'}
+              <p className="text-sm font-medium text-blue-400 mb-1 flex items-center gap-2">
+                {subscription.status === 'trial' ? (
+                  <>
+                    <ClockIcon className="w-4 h-4" />
+                    <span>Trial Start Date</span>
+                  </>
+                ) : (
+                  <>
+                    <CalendarIcon className="w-4 h-4" />
+                    <span>Subscription Start</span>
+                  </>
+                )}
               </p>
               <p className="text-base text-slate-200">
                 {subscription.status === 'trial' && subscription.trial_start_date
@@ -270,8 +285,18 @@ const Account = () => {
               </p>
             </div>
             <div>
-              <p className="text-sm font-medium text-blue-400 mb-1">
-                {subscription.status === 'trial' ? '⏰ Trial End Date' : '📆 Subscription End'}
+              <p className="text-sm font-medium text-blue-400 mb-1 flex items-center gap-2">
+                {subscription.status === 'trial' ? (
+                  <>
+                    <ClockIcon className="w-4 h-4" />
+                    <span>Trial End Date</span>
+                  </>
+                ) : (
+                  <>
+                    <CalendarIcon className="w-4 h-4" />
+                    <span>Subscription End</span>
+                  </>
+                )}
               </p>
               <p className="text-base text-slate-200 font-semibold">
                 {subscription.status === 'trial' && subscription.trial_end_date
@@ -392,10 +417,11 @@ const Account = () => {
             </table>
           </div>
           <div className="mt-4 p-3 bg-green-500/10 rounded-lg border border-green-500/20">
-            <p className="text-sm text-green-400">
-              💰 Total Paid: <span className="font-bold">
+            <p className="text-sm text-green-400 flex items-center gap-2">
+              <BanknotesIcon className="w-4 h-4" />
+              <span>Total Paid: <span className="font-bold">
                 {formatCurrency(subscription.payment_history.reduce((sum, p) => sum + p.amount, 0))}
-              </span>
+              </span></span>
             </p>
           </div>
         </div>
@@ -452,7 +478,10 @@ const Account = () => {
                     </div>
                     {request.rejection_reason && (
                       <div className="mt-3 p-3 bg-danger/10 border border-danger/20 rounded-lg">
-                        <p className="text-sm font-medium text-danger mb-1">❌ Rejection Reason:</p>
+                        <p className="text-sm font-medium text-danger mb-1 flex items-center gap-2">
+                          <XCircleIcon className="w-4 h-4" />
+                          <span>Rejection Reason:</span>
+                        </p>
                         <p className="text-sm text-slate-300">{request.rejection_reason}</p>
                       </div>
                     )}
@@ -618,7 +647,7 @@ const Account = () => {
                   {estimatedPricing.is_prorated && (
                     <div className="bg-green-500/10 p-4 rounded-lg border border-green-500/20">
                       <div className="flex items-start gap-2 mb-2">
-                        <span className="text-green-400 text-lg">✓</span>
+                        <CheckCircleIcon className="w-5 h-5 text-green-400" />
                         <div className="flex-1">
                           <p className="text-sm font-semibold text-green-400 mb-1">Pro-Rated Pricing Applied!</p>
                           <p className="text-xs text-slate-300">{estimatedPricing.explanation}</p>
@@ -695,10 +724,11 @@ const Account = () => {
 
                   {/* Info */}
                   <div className="bg-yellow-500/10 p-3 rounded-lg border border-yellow-500/20">
-                    <p className="text-xs text-yellow-400">
-                      💡 {estimatedPricing.is_prorated 
+                    <p className="text-xs text-yellow-400 flex items-center gap-2">
+                      <Logo size="sm" className="text-yellow-400" />
+                      <span>{estimatedPricing.is_prorated 
                         ? 'You only pay for the remaining subscription period. Your subscription end date stays the same.'
-                        : 'This is an estimated price. Final pricing will be confirmed by the superadmin upon approval.'}
+                        : 'This is an estimated price. Final pricing will be confirmed by the superadmin upon approval.'}</span>
                     </p>
                   </div>
                 </div>

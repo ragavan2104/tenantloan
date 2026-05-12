@@ -3,9 +3,12 @@ import autoTable from 'jspdf-autotable';
 
 interface PendingDue {
   id: string;
+  loan_id: string;
+  loan_number: number;
   name: string;
   phone: string;
   branch_name?: string;
+  loan_type: string;
   next_due_date: string;
   emi_amount: number;
   outstanding_amount: number;
@@ -21,7 +24,7 @@ interface Summary {
 }
 
 interface ReportData {
-  borrowers: PendingDue[];
+  loans: PendingDue[];
   summary: Summary;
   companyName: string;
   reportType: string;
@@ -40,7 +43,7 @@ interface Payment {
   payment_type: string;
   payment_mode: string;
   collected_by_name: string;
-  whatsapp_sent?: boolean;
+  loan_type?: string;
   branch_name?: string;
   loan_number?: number;
 }
@@ -204,7 +207,7 @@ export const generatePendingDuesPDF = (data: ReportData) => {
   doc.setTextColor(120, 120, 120);
   doc.text(`${data.summary.total_count} borrowers`, currentX + centerXOffset, boxY + 20, { align: 'center', baseline: 'middle' });
   
-  // Box 4: Total Borrowers
+  // Box 4: Total Loans
   currentX += boxWidth + gap;
   doc.setFillColor(248, 249, 250); // Light Grey
   doc.setDrawColor(200, 200, 200);
@@ -213,7 +216,7 @@ export const generatePendingDuesPDF = (data: ReportData) => {
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(120, 120, 120);
-  doc.text('Total Borrowers', currentX + centerXOffset, boxY + 7, { align: 'center', baseline: 'middle' });
+  doc.text('Total Loans', currentX + centerXOffset, boxY + 7, { align: 'center', baseline: 'middle' });
   doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...textColor);
@@ -232,11 +235,11 @@ export const generatePendingDuesPDF = (data: ReportData) => {
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...textColor);
-  doc.text('BORROWER DETAILS', marginX, yPosition);
+  doc.text('LOAN DETAILS', marginX, yPosition);
   yPosition += 5;
   
-  const tableData = data.borrowers.map((borrower, index) => {
-    const dueDate = new Date(borrower.next_due_date);
+  const tableData = data.loans.map((loan, index) => {
+    const dueDate = new Date(loan.next_due_date);
     const formattedDate = dueDate.toLocaleDateString('en-IN', {
       day: '2-digit',
       month: 'short',
@@ -245,19 +248,20 @@ export const generatePendingDuesPDF = (data: ReportData) => {
     
     return [
       (index + 1).toString(),
-      borrower.name,
-      borrower.phone,
-      borrower.branch_name || 'N/A',
+      loan.name,
+      loan.phone,
+      loan.branch_name || 'N/A',
+      loan.loan_type,
       formattedDate,
-      `Rs. ${borrower.emi_amount.toLocaleString('en-IN')}`,
-      `Rs. ${borrower.outstanding_amount.toLocaleString('en-IN')}`,
-      borrower.status === 'overdue' ? 'Overdue' : 'Pending',
+      `Rs. ${loan.emi_amount.toLocaleString('en-IN')}`,
+      `Rs. ${loan.outstanding_amount.toLocaleString('en-IN')}`,
+      loan.status === 'overdue' ? 'Overdue' : 'Pending',
     ];
   });
   
   autoTable(doc, {
     startY: yPosition,
-    head: [['#', 'Borrower Name', 'Phone', 'Branch', 'Due Date', 'EMI Amount', 'Outstanding', 'Status']],
+    head: [['#', 'Borrower Name', 'Phone', 'Branch', 'Loan Type', 'Due Date', 'EMI Amount', 'Outstanding', 'Status']],
     body: tableData,
     theme: 'grid',
     styles: {
@@ -280,18 +284,19 @@ export const generatePendingDuesPDF = (data: ReportData) => {
       valign: 'middle'
     },
     columnStyles: {
-      0: { halign: 'center', cellWidth: 12 },
-      1: { halign: 'left', cellWidth: 50 },
-      2: { halign: 'left', cellWidth: 30 },
-      3: { halign: 'left', cellWidth: 40 },
-      4: { halign: 'center', cellWidth: 30 },
-      5: { halign: 'right', cellWidth: 35 },
-      6: { halign: 'right', cellWidth: 40 },
-      7: { halign: 'center', cellWidth: 30 },
+      0: { halign: 'center', cellWidth: 10 },
+      1: { halign: 'left', cellWidth: 45 },
+      2: { halign: 'left', cellWidth: 28 },
+      3: { halign: 'left', cellWidth: 35 },
+      4: { halign: 'center', cellWidth: 28 },
+      5: { halign: 'center', cellWidth: 28 },
+      6: { halign: 'right', cellWidth: 32 },
+      7: { halign: 'right', cellWidth: 35 },
+      8: { halign: 'center', cellWidth: 26 },
     },
     didParseCell: (data) => {
       // Enhanced Status Pill-like Colors
-      if (data.column.index === 7 && data.section === 'body') {
+      if (data.column.index === 8 && data.section === 'body') {
         const status = data.cell.raw as string;
         if (status === 'Overdue') {
           data.cell.styles.fillColor = [253, 237, 237];
@@ -518,17 +523,17 @@ export const generatePaymentsPDF = (data: PaymentReportData) => {
       (index + 1).toString(),
       `${formattedDate}\n${formattedTime}`,
       payment.borrower_name,
+      payment.loan_type || '-',
       `Rs. ${payment.amount.toLocaleString('en-IN')}`,
       payment.payment_type.replace('_', ' '),
       payment.payment_mode.replace('_', ' '),
       payment.collected_by_name,
-      payment.whatsapp_sent ? '✓' : '-',
     ];
   });
   
   autoTable(doc, {
     startY: yPosition,
-    head: [['#', 'Date & Time', 'Borrower', 'Amount', 'Type', 'Mode', 'Collected By', 'WhatsApp']],
+    head: [['#', 'Date & Time', 'Borrower', 'Loan Type', 'Amount', 'Type', 'Mode', 'Collected By']],
     body: tableData,
     theme: 'grid',
     styles: {
@@ -551,18 +556,18 @@ export const generatePaymentsPDF = (data: PaymentReportData) => {
       valign: 'middle'
     },
     columnStyles: {
-      0: { halign: 'center', cellWidth: 12 },
-      1: { halign: 'center', cellWidth: 35 },
-      2: { halign: 'left', cellWidth: 50 },
-      3: { halign: 'right', cellWidth: 35 },
-      4: { halign: 'center', cellWidth: 35 },
-      5: { halign: 'center', cellWidth: 35 },
-      6: { halign: 'left', cellWidth: 45 },
-      7: { halign: 'center', cellWidth: 20 },
+      0: { halign: 'center', cellWidth: 10 },
+      1: { halign: 'center', cellWidth: 32 },
+      2: { halign: 'left', cellWidth: 48 },
+      3: { halign: 'center', cellWidth: 25 },
+      4: { halign: 'right', cellWidth: 32 },
+      5: { halign: 'center', cellWidth: 32 },
+      6: { halign: 'center', cellWidth: 32 },
+      7: { halign: 'left', cellWidth: 45 },
     },
     didParseCell: (data) => {
-      // Color code payment type column
-      if (data.column.index === 4 && data.section === 'body') {
+      // Color code payment type column (now index 5)
+      if (data.column.index === 5 && data.section === 'body') {
         const type = data.cell.raw as string;
         if (type.toLowerCase().includes('full')) {
           data.cell.styles.fillColor = [236, 253, 245];
@@ -572,15 +577,6 @@ export const generatePaymentsPDF = (data: PaymentReportData) => {
           data.cell.styles.fillColor = [240, 247, 255];
           data.cell.styles.textColor = primaryColor;
           data.cell.styles.fontStyle = 'bold';
-        }
-      }
-      // Color code WhatsApp column
-      if (data.column.index === 7 && data.section === 'body') {
-        const sent = data.cell.raw as string;
-        if (sent === '✓') {
-          data.cell.styles.textColor = successColor;
-          data.cell.styles.fontStyle = 'bold';
-          data.cell.styles.fontSize = 10;
         }
       }
     },

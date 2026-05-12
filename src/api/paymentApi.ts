@@ -19,6 +19,7 @@ export interface Payment {
 export interface PaymentDetail extends Payment {
   borrower_name: string;
   collected_by_name: string;
+  loan_type?: string;
 }
 
 export interface CreatePaymentRequest {
@@ -48,7 +49,8 @@ export const paymentApi = {
     paymentMode?: string,
     fromDate?: string,
     toDate?: string,
-    branchFilter?: string
+    branchFilter?: string,
+    loanType?: string
   ): Promise<PaymentDetail[]> => {
     const params = new URLSearchParams({
       limit: limit.toString(),
@@ -60,6 +62,7 @@ export const paymentApi = {
     if (fromDate) params.append('from_date', fromDate);
     if (toDate) params.append('to_date', toDate);
     if (branchFilter) params.append('branch_filter', branchFilter);
+    if (loanType) params.append('loan_type', loanType);
     
     const response = await axiosInstance.get(`/payments?${params.toString()}`);
     return response.data;

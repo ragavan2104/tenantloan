@@ -35,6 +35,9 @@ export interface AddLoanRequest {
   loan_amount: number;
   tenure_months: number;
   start_date: string;
+  loan_type?: string;
+  collateral?: any;
+  borrower_name?: string;
 }
 
 export interface SettleLoanRequest {
@@ -54,14 +57,7 @@ export const loanApi = {
   addLoan: async (borrowerId: string, data: AddLoanRequest): Promise<Loan> => {
     const response = await axiosInstance.post(
       `/loans/borrower/${borrowerId}/add`,
-      null,
-      {
-        params: {
-          loan_amount: data.loan_amount,
-          tenure_months: data.tenure_months,
-          start_date: data.start_date,
-        },
-      }
+      data  // Send data in request body instead of query params
     );
     return response.data;
   },
@@ -102,6 +98,12 @@ export const loanApi = {
   // Get loan summary (existing endpoint)
   getSummary: async (borrowerId: string): Promise<any> => {
     const response = await axiosInstance.get(`/loans/${borrowerId}/summary`);
+    return response.data;
+  },
+
+  // Get recent loans (Admin/Owner only)
+  getRecentLoans: async (days: number = 30, limit: number = 50): Promise<any> => {
+    const response = await axiosInstance.get(`/loans/recent?days=${days}&limit=${limit}`);
     return response.data;
   },
 };

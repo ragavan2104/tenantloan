@@ -4,22 +4,35 @@ import { paymentApi } from '../api/paymentApi';
 import { branchApi } from '../api/branchApi';
 import { companyApi } from '../api/companyApi';
 import { 
-  CheckCircleIcon, 
   FunnelIcon,
-  ArrowDownTrayIcon,
   DocumentArrowDownIcon 
 } from '@heroicons/react/24/outline';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { generatePaymentsPDF } from '../utils/pdfGenerator';
+import { useToast } from '../hooks/useToast';
+import Logo from '../components/Logo';
 
 const Payments = () => {
   const { user } = useSelector((state: RootState) => state.auth);
+  const toast = useToast();
+  
+  // Filter input states (not applied until user clicks Search)
+  const [paymentTypeInput, setPaymentTypeInput] = useState<string>('');
+  const [paymentModeInput, setPaymentModeInput] = useState<string>('');
+  const [loanTypeInput, setLoanTypeInput] = useState<string>('');
+  const [branchFilterInput, setBranchFilterInput] = useState<string>('');
+  const [fromDateInput, setFromDateInput] = useState<string>('');
+  const [toDateInput, setToDateInput] = useState<string>('');
+  
+  // Applied filter states (used in API query)
   const [paymentType, setPaymentType] = useState<string>('');
   const [paymentMode, setPaymentMode] = useState<string>('');
+  const [loanType, setLoanType] = useState<string>('');
+  const [branchFilter, setBranchFilter] = useState<string>('');
   const [fromDate, setFromDate] = useState<string>('');
   const [toDate, setToDate] = useState<string>('');
-  const [branchFilter, setBranchFilter] = useState<string>('');
+  
   const [showFilters, setShowFilters] = useState(false);
 
   // Get branches for filter (owner only)
@@ -37,63 +50,100 @@ const Payments = () => {
   });
 
   const { data: payments, isLoading } = useQuery({
-    queryKey: ['payments', paymentType, paymentMode, fromDate, toDate, branchFilter],
-    queryFn: () => paymentApi.getAll(100, 0, paymentType, paymentMode, fromDate, toDate, branchFilter),
+    queryKey: ['payments', paymentType, paymentMode, loanType, fromDate, toDate, branchFilter],
+    queryFn: () => paymentApi.getAll(100, 0, paymentType, paymentMode, fromDate, toDate, branchFilter, loanType),
   });
 
+  const handleSearch = () => {
+    setPaymentType(paymentTypeInput);
+    setPaymentMode(paymentModeInput);
+    setLoanType(loanTypeInput);
+    setBranchFilter(branchFilterInput);
+    setFromDate(fromDateInput);
+    setToDate(toDateInput);
+  };
+
   const handleClearFilters = () => {
+    // Clear input states
+    setPaymentTypeInput('');
+    setPaymentModeInput('');
+    setLoanTypeInput('');
+    setBranchFilterInput('');
+    setFromDateInput('');
+    setToDateInput('');
+    
+    // Clear applied states
     setPaymentType('');
     setPaymentMode('');
+    setLoanType('');
+    setBranchFilter('');
     setFromDate('');
     setToDate('');
-    setBranchFilter('');
   };
 
   const handleExport = async (format: 'excel' | 'pdf') => {
     if (format === 'pdf') {
       // Generate PDF on frontend
       if (!payments || !companyData) {
-        alert('Data not loaded yet');
+        toast.error('Data not loaded yet. Please wait...');
         return;
       }
 
-      // Get branch name if filtered
-      let branchName = 'All Branches';
-      if (branchFilter && branches) {
-        const branch = branches.find(b => b.id === branchFilter);
-        branchName = branch?.name || branchFilter;
+      if (payments.length === 0) {
+        toast.warning('No payments to export');
+        return;
       }
 
-      // Build date range string
-      let dateRange = '';
-      if (fromDate && toDate) {
-        dateRange = `${new Date(fromDate).toLocaleDateString('en-IN')} to ${new Date(toDate).toLocaleDateString('en-IN')}`;
-      } else if (fromDate) {
-        dateRange = `From ${new Date(fromDate).toLocaleDateString('en-IN')}`;
-      } else if (toDate) {
-        dateRange = `Until ${new Date(toDate).toLocaleDateString('en-IN')}`;
+      try {
+        // Get branch name if filtered
+        let branchName = 'All Branches';
+        if (branchFilter && branches) {
+          const branch = branches.find(b => b.id === branchFilter);
+          branchName = branch?.name || branchFilter;
+        }
+
+        // Build date range string
+        let dateRange = '';
+        if (fromDate && toDate) {
+          dateRange = `${new Date(fromDate).toLocaleDateString('en-IN')} to ${new Date(toDate).toLocaleDateString('en-IN')}`;
+        } else if (fromDate) {
+          dateRange = `From ${new Date(fromDate).toLocaleDateString('en-IN')}`;
+        } else if (toDate) {
+          dateRange = `Until ${new Date(toDate).toLocaleDateString('en-IN')}`;
+        }
+
+        // Calculate total amount
+        const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0);
+
+        generatePaymentsPDF({
+          payments,
+          companyName: companyData.name,
+          totalAmount,
+          filters: {
+            paymentType: paymentType || undefined,
+            paymentMode: paymentMode || undefined,
+            branch: branchFilter ? branchName : undefined,
+            dateRange: dateRange || undefined,
+          },
+        });
+        
+        toast.success(`PDF exported successfully (${payments.length} payments)`);
+      } catch (error) {
+        console.error('PDF export error:', error);
+        toast.error('Failed to generate PDF. Please try again.');
       }
-
-      // Calculate total amount
-      const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0);
-
-      generatePaymentsPDF({
-        payments,
-        companyName: companyData.name,
-        totalAmount,
-        filters: {
-          paymentType: paymentType || undefined,
-          paymentMode: paymentMode || undefined,
-          branch: branchFilter ? branchName : undefined,
-          dateRange: dateRange || undefined,
-        },
-      });
     } else {
       // Excel export via backend
       try {
+        if (!payments || payments.length === 0) {
+          toast.warning('No payments to export');
+          return;
+        }
+
         const params = new URLSearchParams();
         if (paymentType) params.append('payment_type', paymentType);
         if (paymentMode) params.append('payment_mode', paymentMode);
+        if (loanType) params.append('loan_type', loanType);
         if (fromDate) params.append('from_date', fromDate);
         if (toDate) params.append('to_date', toDate);
         if (branchFilter) params.append('branch_filter', branchFilter);
@@ -101,6 +151,8 @@ const Payments = () => {
         const token = localStorage.getItem('token');
         const baseUrl = 'http://localhost:8000';
         const url = `${baseUrl}/payments/export/excel?${params.toString()}`;
+        
+        toast.info('Generating Excel report...');
         
         const response = await fetch(url, {
           headers: {
@@ -119,14 +171,16 @@ const Payments = () => {
         link.click();
         link.remove();
         window.URL.revokeObjectURL(downloadUrl);
+        
+        toast.success('Excel report downloaded successfully');
       } catch (error) {
         console.error('Export error:', error);
-        alert('Failed to export data. Please try again.');
+        toast.error('Failed to export data. Please try again.');
       }
     }
   };
 
-  const hasActiveFilters = paymentType || paymentMode || fromDate || toDate || branchFilter;
+  const hasActiveFilters = paymentType || paymentMode || loanType || fromDate || toDate || branchFilter;
 
   if (isLoading) {
     return (
@@ -137,7 +191,9 @@ const Payments = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      <toast.ToastContainer />
+      <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 dark:text-slate-100">Payment History</h1>
@@ -181,8 +237,8 @@ const Payments = () => {
                 Payment Type
               </label>
               <select
-                value={paymentType}
-                onChange={(e) => setPaymentType(e.target.value)}
+                value={paymentTypeInput}
+                onChange={(e) => setPaymentTypeInput(e.target.value)}
                 className="input-field"
               >
                 <option value="">All Types</option>
@@ -197,8 +253,8 @@ const Payments = () => {
                 Payment Mode
               </label>
               <select
-                value={paymentMode}
-                onChange={(e) => setPaymentMode(e.target.value)}
+                value={paymentModeInput}
+                onChange={(e) => setPaymentModeInput(e.target.value)}
                 className="input-field"
               >
                 <option value="">All Modes</option>
@@ -210,6 +266,24 @@ const Payments = () => {
               </select>
             </div>
 
+            {/* Loan Type Filter */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 dark:text-slate-300 mb-2">
+                Loan Type
+              </label>
+              <select
+                value={loanTypeInput}
+                onChange={(e) => setLoanTypeInput(e.target.value)}
+                className="input-field"
+              >
+                <option value="">All Types</option>
+                <option value="personal">Personal</option>
+                <option value="bike">Bike</option>
+                <option value="car">Car</option>
+                <option value="gold">Gold</option>
+              </select>
+            </div>
+
             {/* Branch Filter (Owner only) */}
             {user?.role === 'owner' && branches && (
               <div>
@@ -217,8 +291,8 @@ const Payments = () => {
                   Branch
                 </label>
                 <select
-                  value={branchFilter}
-                  onChange={(e) => setBranchFilter(e.target.value)}
+                  value={branchFilterInput}
+                  onChange={(e) => setBranchFilterInput(e.target.value)}
                   className="input-field"
                 >
                   <option value="">All Branches</option>
@@ -238,8 +312,8 @@ const Payments = () => {
               </label>
               <input
                 type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
+                value={fromDateInput}
+                onChange={(e) => setFromDateInput(e.target.value)}
                 className="input-field"
               />
             </div>
@@ -251,30 +325,37 @@ const Payments = () => {
               </label>
               <input
                 type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
+                value={toDateInput}
+                onChange={(e) => setToDateInput(e.target.value)}
                 className="input-field"
               />
             </div>
 
-            {/* Clear Filters Button */}
-            {hasActiveFilters && (
-              <div className="flex items-end">
+            {/* Action Buttons */}
+            <div className="flex items-end gap-2 lg:col-span-2">
+              <button
+                onClick={handleSearch}
+                className="btn-primary flex-1"
+              >
+                Search
+              </button>
+              {hasActiveFilters && (
                 <button
                   onClick={handleClearFilters}
-                  className="btn-secondary w-full"
+                  className="btn-secondary flex-1"
                 >
-                  Clear Filters
+                  Clear
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
         
         {/* Export Info */}
         {hasActiveFilters && (
-          <div className="mt-3 text-xs text-slate-400 dark:text-slate-400">
-            💡 Exports will include filtered data with all filter details in the header
+          <div className="mt-3 text-xs text-slate-400 dark:text-slate-400 flex items-center gap-2">
+            <Logo size="sm" className="text-primary" />
+            <span>Exports will include filtered data with all filter details in the header</span>
           </div>
         )}
       </div>
@@ -295,11 +376,11 @@ const Payments = () => {
                 <tr className="border-b border-zinc-800">
                   <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">Date</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">Borrower</th>
+                  <th className="text-center py-3 px-4 text-sm font-medium text-slate-400">Loan Type</th>
                   <th className="text-right py-3 px-4 text-sm font-medium text-slate-400">Amount</th>
                   <th className="text-center py-3 px-4 text-sm font-medium text-slate-400">Type</th>
                   <th className="text-center py-3 px-4 text-sm font-medium text-slate-400">Mode</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">Collected By</th>
-                  <th className="text-center py-3 px-4 text-sm font-medium text-slate-400">WhatsApp</th>
                 </tr>
               </thead>
               <tbody>
@@ -315,6 +396,11 @@ const Payments = () => {
                       })}
                     </td>
                     <td className="py-3 px-4 text-sm text-slate-100">{payment.borrower_name}</td>
+                    <td className="py-3 px-4 text-center">
+                      <span className="text-sm text-slate-300 capitalize">
+                        {payment.loan_type || '-'}
+                      </span>
+                    </td>
                     <td className="py-3 px-4 text-sm text-slate-100 text-right mono-number">
                       ₹{payment.amount.toLocaleString('en-IN')}
                     </td>
@@ -332,11 +418,6 @@ const Payments = () => {
                       </span>
                     </td>
                     <td className="py-3 px-4 text-sm text-slate-300">{payment.collected_by_name}</td>
-                    <td className="py-3 px-4 text-center">
-                      {payment.whatsapp_sent && (
-                        <CheckCircleIcon className="w-5 h-5 text-success mx-auto" />
-                      )}
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -356,6 +437,7 @@ const Payments = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 

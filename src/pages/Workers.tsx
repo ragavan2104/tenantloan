@@ -228,7 +228,7 @@ const Workers = () => {
                 />
                 {!editingWorker && (
                   <p className="text-xs text-blue-400 mt-1">
-                    📧 A temporary password will be sent to this email
+                    A temporary password will be sent to this email
                   </p>
                 )}
               </div>

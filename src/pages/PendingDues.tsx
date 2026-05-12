@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { borrowerApi } from '../api/borrowerApi';
 import { branchApi } from '../api/branchApi';
@@ -9,7 +9,6 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   BanknotesIcon,
-  PhoneIcon,
   ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
 import { Link } from 'react-router-dom';
@@ -19,20 +18,22 @@ import { generatePendingDuesPDF } from '../utils/pdfGenerator';
 
 interface PendingDue {
   id: string;
+  loan_id: string;
+  loan_number: number;
   name: string;
   phone: string;
   aadhar_number?: string;
   branch_id: string;
   branch_name?: string;
+  loan_type: string;
   next_due_date: string;
   emi_amount: number;
   outstanding_amount: number;
   status: string;
-  active_loans_count: number;
 }
 
 interface PendingDuesResponse {
-  borrowers: PendingDue[];
+  loans: PendingDue[];
   summary: {
     total_pending: number;
     total_overdue: number;
@@ -44,12 +45,23 @@ interface PendingDuesResponse {
 
 const PendingDues = () => {
   const { user } = useSelector((state: RootState) => state.auth);
+  
+  // Filter input states (not applied until user clicks Search)
+  const [statusInput, setStatusInput] = useState<string>('all');
+  const [branchFilterInput, setBranchFilterInput] = useState<string>('');
+  const [loanTypeFilterInput, setLoanTypeFilterInput] = useState<string>('all');
+  const [searchInput, setSearchInput] = useState<string>('');
+  const [fromDateInput, setFromDateInput] = useState<string>('');
+  const [toDateInput, setToDateInput] = useState<string>(new Date().toISOString().split('T')[0]);
+  
+  // Applied filter states (used in API query)
   const [status, setStatus] = useState<string>('all');
   const [branchFilter, setBranchFilter] = useState<string>('');
+  const [loanTypeFilter, setLoanTypeFilter] = useState<string>('all');
   const [search, setSearch] = useState<string>('');
   const [fromDate, setFromDate] = useState<string>('');
-  // Set toDate to today by default
   const [toDate, setToDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  
   const [showFilters, setShowFilters] = useState(false);
 
   // Get branches for filter (owner only)
@@ -67,11 +79,12 @@ const PendingDues = () => {
   });
 
   const { data, isLoading } = useQuery<PendingDuesResponse>({
-    queryKey: ['pending-dues', status, branchFilter, search, fromDate, toDate],
+    queryKey: ['pending-dues', status, branchFilter, loanTypeFilter, search, fromDate, toDate],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (status && status !== 'all') params.append('status', status);
       if (branchFilter) params.append('branch_filter', branchFilter);
+      if (loanTypeFilter && loanTypeFilter !== 'all') params.append('loan_type', loanTypeFilter);
       if (search) params.append('search', search);
       if (fromDate) params.append('from_date', fromDate);
       if (toDate) params.append('to_date', toDate);
@@ -81,9 +94,28 @@ const PendingDues = () => {
     },
   });
 
+  const handleSearch = () => {
+    setStatus(statusInput);
+    setBranchFilter(branchFilterInput);
+    setLoanTypeFilter(loanTypeFilterInput);
+    setSearch(searchInput);
+    setFromDate(fromDateInput);
+    setToDate(toDateInput);
+  };
+
   const handleClearFilters = () => {
+    // Clear input states
+    setStatusInput('all');
+    setBranchFilterInput('');
+    setLoanTypeFilterInput('all');
+    setSearchInput('');
+    setFromDateInput('');
+    setToDateInput('');
+    
+    // Clear applied states
     setStatus('all');
     setBranchFilter('');
+    setLoanTypeFilter('all');
     setSearch('');
     setFromDate('');
     setToDate('');
@@ -120,7 +152,7 @@ const PendingDues = () => {
       }
 
       generatePendingDuesPDF({
-        borrowers: data.borrowers,
+        loans: data.loans,
         summary: data.summary,
         companyName: companyData.name,
         reportType,
@@ -165,7 +197,7 @@ const PendingDues = () => {
     }
   };
 
-  const hasActiveFilters = status !== 'all' || branchFilter || search || fromDate || toDate;
+  const hasActiveFilters = status !== 'all' || branchFilter || loanTypeFilter !== 'all' || search || fromDate || toDate;
 
   if (isLoading) {
     return (
@@ -184,19 +216,19 @@ const PendingDues = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="page-shell">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="page-header">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100">Pending Dues</h1>
-          <p className="text-gray-600 dark:text-slate-400 mt-1">Track and manage pending payments</p>
+          <h1 className="page-title">Pending Dues</h1>
+          <p className="page-subtitle">Track and manage pending payments</p>
         </div>
         <div className="flex gap-2">
           
           <button
             onClick={() => handleExport('pdf')}
             className="btn-secondary flex items-center gap-2"
-            disabled={!data?.borrowers || data.borrowers.length === 0}
+            disabled={!data?.loans || data.loans.length === 0}
           >
             <ArrowDownTrayIcon className="w-5 h-5" />
             <span>Export PDF</span>
@@ -206,60 +238,60 @@ const PendingDues = () => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="glass-card p-4 bg-white dark:bg-zinc-900">
+        <div className="metric-card">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 dark:text-slate-400">Total Pending</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Total Pending</p>
               <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mono-number">
                 ₹{summary.total_pending.toLocaleString('en-IN')}
               </p>
-              <p className="text-xs text-gray-500 dark:text-slate-500 mt-1">{summary.count_pending} borrowers</p>
+              <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{summary.count_pending} loans</p>
             </div>
             <ClockIcon className="w-10 h-10 text-yellow-600 dark:text-yellow-400 opacity-50" />
           </div>
         </div>
 
-        <div className="glass-card p-4 bg-white dark:bg-zinc-900">
+        <div className="metric-card">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 dark:text-slate-400">Total Overdue</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Total Overdue</p>
               <p className="text-2xl font-bold text-red-600 dark:text-red-400 mono-number">
                 ₹{summary.total_overdue.toLocaleString('en-IN')}
               </p>
-              <p className="text-xs text-gray-500 dark:text-slate-500 mt-1">{summary.count_overdue} borrowers</p>
+              <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{summary.count_overdue} loans</p>
             </div>
             <ExclamationTriangleIcon className="w-10 h-10 text-red-600 dark:text-red-400 opacity-50" />
           </div>
         </div>
 
-        <div className="glass-card p-4 bg-white dark:bg-zinc-900">
+        <div className="metric-card">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 dark:text-slate-400">Total Borrowers</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Total Loans</p>
               <p className="text-2xl font-bold text-primary mono-number">
                 {summary.total_count}
               </p>
-              <p className="text-xs text-gray-500 dark:text-slate-500 mt-1">With pending dues</p>
+              <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">With pending dues</p>
             </div>
             <BanknotesIcon className="w-10 h-10 text-primary opacity-50" />
           </div>
         </div>
 
-        <div className="glass-card p-4 bg-white dark:bg-zinc-900">
+        <div className="metric-card">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 dark:text-slate-400">Combined Total</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Combined Total</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-slate-100 mono-number">
                 ₹{(summary.total_pending + summary.total_overdue).toLocaleString('en-IN')}
               </p>
-              <p className="text-xs text-gray-500 dark:text-slate-500 mt-1">All pending amounts</p>
+              <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">All pending amounts</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="glass-card p-4 space-y-4 bg-white dark:bg-zinc-900">
+      <div className="page-card space-y-4">
         {/* Search Bar */}
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -267,18 +299,18 @@ const PendingDues = () => {
           </div>
           <input
             type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="input-field pl-10"
             placeholder="Search by name or phone number..."
           />
         </div>
 
         {/* Filter Toggle */}
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300 hover:text-primary transition-colors"
-        >
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 text-sm text-slate-700 transition-colors hover:text-primary dark:text-slate-300"
+          >
           <FunnelIcon className="w-4 h-4" />
           <span>{showFilters ? 'Hide Filters' : 'Show Filters'}</span>
           {hasActiveFilters && (
@@ -290,15 +322,15 @@ const PendingDues = () => {
 
         {/* Filter Options */}
         {showFilters && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t border-gray-200 dark:border-zinc-800">
+          <div className="grid grid-cols-1 gap-4 border-t border-slate-200 pt-4 sm:grid-cols-2 lg:grid-cols-3 dark:border-zinc-800">
             {/* Status Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                 Status
               </label>
               <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
+                value={statusInput}
+                onChange={(e) => setStatusInput(e.target.value)}
                 className="input-field"
               >
                 <option value="all">All</option>
@@ -314,8 +346,8 @@ const PendingDues = () => {
                   Branch
                 </label>
                 <select
-                  value={branchFilter}
-                  onChange={(e) => setBranchFilter(e.target.value)}
+                  value={branchFilterInput}
+                  onChange={(e) => setBranchFilterInput(e.target.value)}
                   className="input-field"
                 >
                   <option value="">All Branches</option>
@@ -328,6 +360,24 @@ const PendingDues = () => {
               </div>
             )}
 
+            {/* Loan Type Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                Loan Type
+              </label>
+              <select
+                value={loanTypeFilterInput}
+                onChange={(e) => setLoanTypeFilterInput(e.target.value)}
+                className="input-field"
+              >
+                <option value="all">All Types</option>
+                <option value="personal">Personal</option>
+                <option value="bike">Bike</option>
+                <option value="car">Car</option>
+                <option value="gold">Gold</option>
+              </select>
+            </div>
+
             {/* From Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
@@ -335,8 +385,8 @@ const PendingDues = () => {
               </label>
               <input
                 type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
+                value={fromDateInput}
+                onChange={(e) => setFromDateInput(e.target.value)}
                 className="input-field"
               />
             </div>
@@ -348,30 +398,36 @@ const PendingDues = () => {
               </label>
               <input
                 type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
+                value={toDateInput}
+                onChange={(e) => setToDateInput(e.target.value)}
                 className="input-field"
               />
             </div>
 
-            {/* Clear Filters */}
-            {hasActiveFilters && (
-              <div className="flex items-end">
+            {/* Action Buttons */}
+            <div className="flex items-end gap-2 lg:col-span-2">
+              <button
+                onClick={handleSearch}
+                className="btn-primary flex-1"
+              >
+                Search
+              </button>
+              {hasActiveFilters && (
                 <button
                   onClick={handleClearFilters}
-                  className="btn-secondary w-full"
+                  className="btn-secondary flex-1"
                 >
-                  Clear Filters
+                  Clear
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
       </div>
 
       {/* Results */}
       <div className="glass-card p-6 bg-white dark:bg-zinc-900">
-        {data?.borrowers && data.borrowers.length > 0 ? (
+        {data?.loans && data.loans.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -381,6 +437,7 @@ const PendingDues = () => {
                   {user?.role === 'owner' && (
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-600 dark:text-slate-400">Branch</th>
                   )}
+                  <th className="text-center py-3 px-4 text-sm font-medium text-gray-600 dark:text-slate-400">Loan Type</th>
                   <th className="text-center py-3 px-4 text-sm font-medium text-gray-600 dark:text-slate-400">Due Date</th>
                   <th className="text-right py-3 px-4 text-sm font-medium text-gray-600 dark:text-slate-400">EMI Amount</th>
                   <th className="text-right py-3 px-4 text-sm font-medium text-gray-600 dark:text-slate-400">Outstanding</th>
@@ -389,35 +446,40 @@ const PendingDues = () => {
                 </tr>
               </thead>
               <tbody>
-                {data.borrowers.map((borrower) => (
-                  <tr key={borrower.id} className="border-b border-gray-100 dark:border-zinc-800/50 hover:bg-gray-50 dark:hover:bg-zinc-800/30">
+                {data.loans.map((loan) => (
+                  <tr key={`${loan.id}-${loan.loan_id}`} className="border-b border-gray-100 dark:border-zinc-800/50 hover:bg-gray-50 dark:hover:bg-zinc-800/30">
                     <td className="py-3 px-4">
                       <Link 
-                        to={`/borrowers/${borrower.id}`}
+                        to={`/borrowers/${loan.id}`}
                         className="text-sm text-gray-900 dark:text-slate-100 hover:text-primary font-medium"
                       >
-                        {borrower.name}
+                        {loan.name}
                       </Link>
                     </td>
-                    <td className="py-3 px-4 text-sm text-gray-700 dark:text-slate-300">{borrower.phone}</td>
+                    <td className="py-3 px-4 text-sm text-gray-700 dark:text-slate-300">{loan.phone}</td>
                     {user?.role === 'owner' && (
-                      <td className="py-3 px-4 text-sm text-gray-600 dark:text-slate-400">{borrower.branch_name || 'N/A'}</td>
+                      <td className="py-3 px-4 text-sm text-gray-600 dark:text-slate-400">{loan.branch_name || 'N/A'}</td>
                     )}
+                    <td className="py-3 px-4 text-center">
+                      <span className="text-sm text-gray-700 dark:text-slate-300 capitalize">
+                        {loan.loan_type}
+                      </span>
+                    </td>
                     <td className="py-3 px-4 text-center text-sm text-gray-700 dark:text-slate-300">
-                      {new Date(borrower.next_due_date).toLocaleDateString('en-IN', {
+                      {new Date(loan.next_due_date).toLocaleDateString('en-IN', {
                         day: '2-digit',
                         month: 'short',
                         year: 'numeric'
                       })}
                     </td>
                     <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-slate-100 mono-number">
-                      ₹{borrower.emi_amount.toLocaleString('en-IN')}
+                      ₹{loan.emi_amount.toLocaleString('en-IN')}
                     </td>
                     <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-slate-100 mono-number">
-                      ₹{borrower.outstanding_amount.toLocaleString('en-IN')}
+                      ₹{loan.outstanding_amount.toLocaleString('en-IN')}
                     </td>
                     <td className="py-3 px-4 text-center">
-                      {borrower.status === 'overdue' ? (
+                      {loan.status === 'overdue' ? (
                         <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400 text-xs rounded-full border border-red-200 dark:border-red-500/30">
                           <ExclamationTriangleIcon className="w-3 h-3" />
                           Overdue
@@ -432,20 +494,11 @@ const PendingDues = () => {
                     <td className="py-3 px-4">
                       <div className="flex items-center justify-center gap-2">
                         <Link
-                          to={`/borrowers/${borrower.id}`}
+                          to={`/borrowers/${loan.id}`}
                           className="btn-primary text-xs py-1 px-3"
                         >
                           Pay
                         </Link>
-                        <a
-                          href={`https://wa.me/${borrower.phone.replace(/\D/g, '')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="btn-secondary text-xs py-1 px-2"
-                          title="Send WhatsApp reminder"
-                        >
-                          <PhoneIcon className="w-4 h-4" />
-                        </a>
                       </div>
                     </td>
                   </tr>

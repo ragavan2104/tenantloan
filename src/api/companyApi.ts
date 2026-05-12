@@ -36,6 +36,18 @@ export interface Company {
     penalty_enabled: boolean;
     penalty_calculation_base: string;
     grace_period_days: number;
+    loan_type_settings?: {
+      personal: { interest_rate: number; interest_type: string };
+      bike: { interest_rate: number; interest_type: string };
+      car: { interest_rate: number; interest_type: string };
+      gold: { interest_rate: number; interest_type: string };
+    };
+    gold_rates?: {
+      '18K': number;
+      '22K': number;
+      '24K': number;
+    };
+    max_gold_loan_amount?: number;
   };
   stats: {
     total_branches: number;

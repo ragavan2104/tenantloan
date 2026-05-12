@@ -11,11 +11,19 @@
   
   body {
     @apply bg-zinc-950 text-slate-100 font-sans antialiased;
+    background-image:
+      radial-gradient(circle at top left, rgba(79, 70, 229, 0.16), transparent 28%),
+      radial-gradient(circle at top right, rgba(14, 165, 233, 0.12), transparent 24%),
+      linear-gradient(180deg, rgba(9, 9, 11, 0.98), rgba(9, 9, 11, 0.94));
   }
 
   /* Light theme overrides */
   :root:not(.dark) body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-slate-50 text-slate-900;
+    background-image:
+      radial-gradient(circle at top left, rgba(79, 70, 229, 0.14), transparent 26%),
+      radial-gradient(circle at top right, rgba(14, 165, 233, 0.12), transparent 22%),
+      linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.92));
   }
 
   :root:not(.dark) * {
@@ -23,6 +31,25 @@
   }
 
   /* Global text color overrides for light theme */
+  :root:not(.dark) .text-black,
+  :root:not(.dark) .text-gray-900,
+  :root:not(.dark) .text-neutral-900,
+  :root:not(.dark) .text-stone-900 {
+    color: #0f172a !important; /* slate-900 */
+  }
+
+  :root:not(.dark) .text-gray-800,
+  :root:not(.dark) .text-neutral-800,
+  :root:not(.dark) .text-stone-800 {
+    color: #1e293b !important; /* slate-800 */
+  }
+
+  :root:not(.dark) .text-gray-700,
+  :root:not(.dark) .text-neutral-700,
+  :root:not(.dark) .text-stone-700 {
+    color: #334155 !important; /* slate-700 */
+  }
+
   :root:not(.dark) .text-slate-100 {
     color: #111827 !important; /* gray-900 */
   }
@@ -80,6 +107,10 @@
 
   :root:not(.dark) .bg-zinc-900 {
     background-color: #ffffff !important; /* white */
+  }
+
+  :root:not(.dark) .bg-surface-gray-light {
+    background-color: #f8fafc !important; /* slate-50 */
   }
 
   :root:not(.dark) .bg-zinc-800 {
@@ -158,18 +189,27 @@
 @layer components {
   /* Glassmorphism card effect */
   .glass-card {
-    @apply bg-zinc-900/50 backdrop-blur-md border border-zinc-800/50 rounded-lg;
+    @apply rounded-2xl border border-zinc-800/60 bg-zinc-900/60 shadow-2xl backdrop-blur-md transition-all duration-200;
   }
 
   /* Light theme glass card */
   :root:not(.dark) .glass-card {
-    @apply bg-white border-gray-200 shadow-md;
-    backdrop-filter: none;
+    @apply bg-white/90 border-slate-200 shadow-[0_18px_50px_rgba(15,23,42,0.08)];
+    backdrop-filter: blur(14px);
   }
 
   /* Ensure text is visible in glass cards */
   :root:not(.dark) .glass-card * {
     color: inherit;
+  }
+
+  /* Preserve button text colors in glass cards */
+  :root:not(.dark) .glass-card .btn-primary {
+    color: white;
+  }
+
+  :root:not(.dark) .glass-card .btn-secondary {
+    color: #f1f5f9;
   }
 
   :root:not(.dark) .glass-card .text-slate-100,
@@ -252,7 +292,7 @@
 
   /* Button styles */
   .btn-primary {
-    @apply bg-primary hover:bg-indigo-600 text-white font-medium px-4 py-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-zinc-950;
+    @apply inline-flex items-center justify-center min-h-11 bg-primary hover:bg-indigo-600 text-sm font-semibold text-white px-5 py-2.5 rounded-xl shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-zinc-950;
   }
 
   :root:not(.dark) .btn-primary {
@@ -260,15 +300,15 @@
   }
 
   .btn-secondary {
-    @apply bg-zinc-800 hover:bg-zinc-700 text-slate-100 font-medium px-4 py-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 focus:ring-offset-zinc-950;
+    @apply inline-flex items-center justify-center min-h-11 bg-zinc-800 hover:bg-zinc-700 text-sm font-semibold text-slate-100 px-5 py-2.5 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 focus:ring-offset-zinc-950;
   }
 
   :root:not(.dark) .btn-secondary {
-    @apply bg-gray-200 hover:bg-gray-300 text-gray-900 focus:ring-offset-white;
+    @apply bg-white hover:bg-slate-100 text-slate-900 border border-slate-200 shadow-sm focus:ring-offset-white;
   }
 
   .btn-danger {
-    @apply bg-danger hover:bg-rose-700 text-white font-medium px-4 py-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-danger focus:ring-offset-2 focus:ring-offset-zinc-950;
+    @apply inline-flex items-center justify-center min-h-11 bg-danger hover:bg-rose-700 text-sm font-semibold text-white px-5 py-2.5 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-danger focus:ring-offset-2 focus:ring-offset-zinc-950;
   }
 
   :root:not(.dark) .btn-danger {
@@ -277,11 +317,60 @@
 
   /* Input styles */
   .input-field {
-    @apply w-full bg-zinc-900 border border-zinc-700 text-slate-100 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-zinc-500;
+    @apply w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-slate-100 placeholder:text-zinc-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary;
   }
 
   :root:not(.dark) .input-field {
-    @apply bg-white border-gray-300 text-gray-900 placeholder:text-gray-400;
+    @apply border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 shadow-sm;
+  }
+
+  /* Shared page layout helpers */
+  .page-shell {
+    @apply space-y-6;
+  }
+
+  .page-header {
+    @apply flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between;
+  }
+
+  .page-title {
+    @apply text-2xl sm:text-3xl font-bold tracking-tight text-slate-100 dark:text-slate-100;
+  }
+
+  :root:not(.dark) .page-title {
+    color: #0f172a;
+  }
+
+  .page-subtitle {
+    @apply mt-1 text-sm sm:text-base text-slate-400 dark:text-slate-400;
+  }
+
+  :root:not(.dark) .page-subtitle {
+    color: #475569;
+  }
+
+  .page-card {
+    @apply glass-card p-6;
+  }
+
+  .metric-card {
+    @apply glass-card p-5 sm:p-6;
+  }
+
+  .surface-card {
+    @apply rounded-2xl border border-zinc-800/70 bg-zinc-900/70 shadow-lg;
+  }
+
+  :root:not(.dark) .surface-card {
+    @apply border-slate-200 bg-white shadow-sm;
+  }
+
+  .section-label {
+    @apply text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400;
+  }
+
+  :root:not(.dark) .section-label {
+    color: #64748b;
   }
 
   /* Sidebar width */
@@ -300,6 +389,10 @@
   }
 
   :root:not(.dark) .hover\:bg-zinc-800:hover {
+    background-color: #f3f4f6 !important; /* gray-100 */
+  }
+
+  :root:not(.dark) .hover\:bg-surface-gray-light:hover {
     background-color: #f3f4f6 !important; /* gray-100 */
   }
 }

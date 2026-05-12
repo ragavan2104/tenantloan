@@ -5,10 +5,13 @@ import { borrowerApi } from '../api/borrowerApi';
 import { loanApi } from '../api/loanApi';
 import { paymentApi } from '../api/paymentApi';
 import { ArrowLeftIcon, PhoneIcon, MapPinIcon } from '@heroicons/react/24/outline';
+import { useToast } from '../context/ToastContext';
+import LoanSchedule from '../components/LoanSchedule';
 
 const BorrowerDetail = () => {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [showSettleModal, setShowSettleModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedLoan, setSelectedLoan] = useState<any>(null);
@@ -46,15 +49,24 @@ const BorrowerDetail = () => {
   const paymentMutation = useMutation({
     mutationFn: (data: any) => paymentApi.recordDuePayment(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['borrower', id] });
-      queryClient.invalidateQueries({ queryKey: ['borrower-loans', id] });
-      queryClient.invalidateQueries({ queryKey: ['borrower-schedule', id] });
-      queryClient.invalidateQueries({ queryKey: ['borrower-payments', id] });
+      // Show toast immediately
+      toast.success('Payment recorded successfully!');
+      
+      // Close modal immediately
       setShowPaymentModal(false);
       setSelectedLoan(null);
       setPaymentAmount(0);
       setPaymentMode('cash');
       setPaymentNotes('');
+      
+      // Invalidate queries in background (don't wait)
+      queryClient.invalidateQueries({ queryKey: ['borrower', id] });
+      queryClient.invalidateQueries({ queryKey: ['borrower-loans', id] });
+      queryClient.invalidateQueries({ queryKey: ['borrower-schedule', id] });
+      queryClient.invalidateQueries({ queryKey: ['borrower-payments', id] });
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.detail || 'Failed to record payment');
     },
   });
 
@@ -62,15 +74,24 @@ const BorrowerDetail = () => {
     mutationFn: ({ loanId, data }: { loanId: string; data: any }) => 
       loanApi.settleLoan(loanId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['borrower', id] });
-      queryClient.invalidateQueries({ queryKey: ['borrower-loans', id] });
-      queryClient.invalidateQueries({ queryKey: ['borrower-schedule', id] });
-      queryClient.invalidateQueries({ queryKey: ['borrower-payments', id] });
+      // Show toast immediately
+      toast.success('Loan settled successfully!');
+      
+      // Close modal immediately
       setShowSettleModal(false);
       setSelectedLoan(null);
       setPaymentMode('cash');
       setTransactionRef('');
       setPaymentNotes('');
+      
+      // Invalidate queries in background (don't wait)
+      queryClient.invalidateQueries({ queryKey: ['borrower', id] });
+      queryClient.invalidateQueries({ queryKey: ['borrower-loans', id] });
+      queryClient.invalidateQueries({ queryKey: ['borrower-schedule', id] });
+      queryClient.invalidateQueries({ queryKey: ['borrower-payments', id] });
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.detail || 'Failed to settle loan');
     },
   });
 
@@ -79,6 +100,7 @@ const BorrowerDetail = () => {
     setPaymentAmount(loan.monthly_emi);
     setPaymentMode('cash');
     setPaymentNotes('');
+    setTransactionRef('');
     setShowPaymentModal(true);
   };
 
@@ -93,25 +115,42 @@ const BorrowerDetail = () => {
   const handlePayment = () => {
     if (!selectedLoan || !borrower) return;
 
-    paymentMutation.mutate({
+    const payload: any = {
       borrower_id: borrower.id,
       amount: paymentAmount,
       payment_type: 'due_payment',
       payment_mode: paymentMode,
-      notes: paymentNotes || undefined,
-    });
+    };
+
+    // Only include optional fields if they have values
+    if (paymentNotes && paymentNotes.trim()) {
+      payload.notes = paymentNotes.trim();
+    }
+    if (transactionRef && transactionRef.trim()) {
+      payload.transaction_ref = transactionRef.trim();
+    }
+
+    paymentMutation.mutate(payload);
   };
 
   const handleSettleLoan = () => {
     if (!selectedLoan) return;
 
+    const payload: any = {
+      payment_mode: paymentMode,
+    };
+
+    // Only include optional fields if they have values
+    if (transactionRef && transactionRef.trim()) {
+      payload.transaction_ref = transactionRef.trim();
+    }
+    if (paymentNotes && paymentNotes.trim()) {
+      payload.notes = paymentNotes.trim();
+    }
+
     settleLoanMutation.mutate({
       loanId: selectedLoan.id,
-      data: {
-        payment_mode: paymentMode,
-        transaction_ref: transactionRef || undefined,
-        notes: paymentNotes || undefined,
-      },
+      data: payload,
     });
   };
 
@@ -128,13 +167,14 @@ const BorrowerDetail = () => {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl">
-      <div className="flex items-center gap-4">
-        <Link to="/borrowers" className="p-2 hover:bg-surface-gray-light rounded-lg">
+    <div className="page-shell max-w-7xl mx-auto">
+      <div className="page-header">
+        <div className="flex items-center gap-4">
+        <Link to="/borrowers" className="rounded-xl p-2 transition-colors hover:bg-slate-100 dark:hover:bg-zinc-800">
           <ArrowLeftIcon className="w-5 h-5 text-slate-300" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-100">{borrower.name}</h1>
+          <h1 className="page-title">{borrower.name}</h1>
           <div className="flex items-center gap-3 mt-2">
             <span className="text-sm text-slate-400">
               {loanSummary?.total_loans || 0} {loanSummary?.total_loans === 1 ? 'Loan' : 'Loans'}
@@ -154,11 +194,12 @@ const BorrowerDetail = () => {
         {loanSummary && loanSummary.active_loans > 0 && (
           <Link
             to={`/borrowers/${id}/add-loan`}
-            className="btn-secondary text-sm px-4 py-2"
+            className="btn-secondary"
           >
             Add Loan
           </Link>
         )}
+        </div>
       </div>
 
       {/* Contact Info */}
@@ -245,17 +286,23 @@ const BorrowerDetail = () => {
                   }`}>
                     {loan.loan_status}
                   </span>
+                  <Link
+                    to={`/borrowers/${id}/loans/${loan.id}`}
+                    className="btn-secondary text-sm"
+                  >
+                    View Details
+                  </Link>
                   {loan.loan_status === 'active' && (
                     <div className="flex gap-2">
                       <button
                         onClick={() => openPaymentModal(loan)}
-                        className="btn-primary text-xs px-3 py-1"
+                        className="btn-primary text-sm"
                       >
                         Pay Due
                       </button>
                       <button
                         onClick={() => openSettleModal(loan)}
-                        className="btn-secondary text-xs px-3 py-1"
+                        className="btn-secondary text-sm"
                       >
                         Settle
                       </button>
@@ -306,51 +353,11 @@ const BorrowerDetail = () => {
 
       {/* EMI Schedule */}
       {schedule && schedule.length > 0 && (
-        <div className="glass-card p-6">
-          <h2 className="text-lg font-semibold text-slate-100 mb-4">EMI Schedule</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full table-zebra">
-              <thead>
-                <tr className="border-b border-zinc-800">
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">Loan #</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">#</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">Due Date</th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-slate-400">Amount</th>
-                  <th className="text-center py-3 px-4 text-sm font-medium text-slate-400">Status</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">Paid On</th>
-                </tr>
-              </thead>
-              <tbody>
-                {schedule.map((item) => (
-                  <tr key={item.id}>
-                    <td className="py-3 px-4 text-sm text-slate-300">
-                      Loan #{item.loan_number || 1}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-slate-300">{item.installment_no}</td>
-                    <td className="py-3 px-4 text-sm text-slate-300">
-                      {new Date(item.due_date).toLocaleDateString()}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-slate-100 text-right mono-number">
-                      ₹{item.due_amount.toLocaleString()}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <span className={`
-                        ${item.status === 'paid' ? 'badge-success' : 
-                          item.status === 'overdue' ? 'badge-danger' : 'badge-warning'}
-                        capitalize
-                      `}>
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-sm text-slate-300">
-                      {item.paid_on ? new Date(item.paid_on).toLocaleDateString() : '-'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <LoanSchedule 
+          schedule={schedule} 
+          borrowerName={borrower?.name}
+          borrowerPhone={borrower?.phone}
+        />
       )}
 
       {/* Payment History */}
@@ -388,7 +395,7 @@ const BorrowerDetail = () => {
                   </span>
                   {payment.whatsapp_sent && (
                     <p className="text-xs text-success mt-1 whatsapp-badge">
-                      ✓ WhatsApp sent
+                      WhatsApp sent
                     </p>
                   )}
                 </div>
@@ -447,6 +454,19 @@ const BorrowerDetail = () => {
 
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Transaction Reference (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={transactionRef}
+                  onChange={(e) => setTransactionRef(e.target.value)}
+                  className="input-field"
+                  placeholder="Transaction ID, Cheque No, etc."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
                   Notes (Optional)
                 </label>
                 <textarea
@@ -470,7 +490,6 @@ const BorrowerDetail = () => {
                 Cancel
               </button>
               <button
-                onClick={handlePayment}
                 className="btn-primary flex-1"
                 disabled={paymentMutation.isPending || paymentAmount <= 0}
               >

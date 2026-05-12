@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { companyApi } from '../api/companyApi';
 import { Cog6ToothIcon, CurrencyRupeeIcon, CalendarIcon, ExclamationTriangleIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
+import LoanTypeIcon from '../components/LoanTypeIcon';
 
 const CompanySettings = () => {
   const queryClient = useQueryClient();
@@ -23,6 +24,17 @@ const CompanySettings = () => {
     penalty_enabled: true,
     penalty_calculation_base: 'due_amount',
     grace_period_days: 0,
+    loan_type_settings: {
+      personal: { interest_rate: 18, interest_type: 'flat' },
+      bike: { interest_rate: 15, interest_type: 'flat' },
+      car: { interest_rate: 12, interest_type: 'flat' },
+      gold: { interest_rate: 10, interest_type: 'flat' },
+    },
+    gold_rates: {
+      '18K': 5000,
+      '22K': 6000,
+      '24K': 7000,
+    },
   });
 
   useEffect(() => {
@@ -35,6 +47,17 @@ const CompanySettings = () => {
         penalty_enabled: company.settings.penalty_enabled ?? true,
         penalty_calculation_base: company.settings.penalty_calculation_base || 'due_amount',
         grace_period_days: company.settings.grace_period_days || 0,
+        loan_type_settings: company.settings.loan_type_settings || {
+          personal: { interest_rate: 18, interest_type: 'flat' },
+          bike: { interest_rate: 15, interest_type: 'flat' },
+          car: { interest_rate: 12, interest_type: 'flat' },
+          gold: { interest_rate: 10, interest_type: 'flat' },
+        },
+        gold_rates: (company.settings as any).gold_rates || {
+          '18K': 5000,
+          '22K': 6000,
+          '24K': 7000,
+        },
       });
     }
   }, [company]);
@@ -85,47 +108,304 @@ const CompanySettings = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Interest Settings */}
+        {/* Loan Type Specific Interest Settings */}
         <div className="glass-card p-6">
           <div className="flex items-center gap-2 mb-6">
             <CurrencyRupeeIcon className="w-5 h-5 text-primary" />
-            <h2 className="text-xl font-semibold text-slate-100">Interest Settings</h2>
+            <h2 className="text-xl font-semibold text-slate-100">Loan Type Interest Settings</h2>
           </div>
+          <p className="text-sm text-slate-400 mb-6">Configure different interest rates for each loan type</p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Interest Rate (% per annum) *
-              </label>
-              <input
-                type="number"
-                value={settings.interest_rate}
-                onChange={(e) => setSettings({ ...settings, interest_rate: parseFloat(e.target.value) })}
-                className="input-field"
-                step="0.1"
-                min="0"
-                max="100"
-                required
-              />
-              <p className="text-xs text-slate-500 mt-1">Annual interest rate for all branches</p>
+          <div className="space-y-6">
+            {/* Personal Loan */}
+            <div className="p-4 bg-surface-gray-light rounded-lg border border-zinc-800">
+              <div className="flex items-center gap-2 mb-4">
+                <LoanTypeIcon type="personal" size="lg" className="text-primary" />
+                <h3 className="text-lg font-semibold text-slate-100">Personal Loan</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Interest Rate (% per annum) *
+                  </label>
+                  <input
+                    type="number"
+                    value={settings.loan_type_settings.personal.interest_rate}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      loan_type_settings: {
+                        ...settings.loan_type_settings,
+                        personal: { ...settings.loan_type_settings.personal, interest_rate: parseFloat(e.target.value) }
+                      }
+                    })}
+                    className="input-field"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Interest Type *
+                  </label>
+                  <select
+                    value={settings.loan_type_settings.personal.interest_type}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      loan_type_settings: {
+                        ...settings.loan_type_settings,
+                        personal: { ...settings.loan_type_settings.personal, interest_type: e.target.value }
+                      }
+                    })}
+                    className="input-field"
+                    required
+                  >
+                    <option value="flat">Flat Rate</option>
+                    <option value="reducing_balance">Reducing Balance</option>
+                  </select>
+                </div>
+              </div>
             </div>
 
+            {/* Bike Loan */}
+            <div className="p-4 bg-surface-gray-light rounded-lg border border-zinc-800">
+              <div className="flex items-center gap-2 mb-4">
+                <LoanTypeIcon type="bike" size="lg" className="text-primary" />
+                <h3 className="text-lg font-semibold text-slate-100">Bike Loan</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Interest Rate (% per annum) *
+                  </label>
+                  <input
+                    type="number"
+                    value={settings.loan_type_settings.bike.interest_rate}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      loan_type_settings: {
+                        ...settings.loan_type_settings,
+                        bike: { ...settings.loan_type_settings.bike, interest_rate: parseFloat(e.target.value) }
+                      }
+                    })}
+                    className="input-field"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Interest Type *
+                  </label>
+                  <select
+                    value={settings.loan_type_settings.bike.interest_type}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      loan_type_settings: {
+                        ...settings.loan_type_settings,
+                        bike: { ...settings.loan_type_settings.bike, interest_type: e.target.value }
+                      }
+                    })}
+                    className="input-field"
+                    required
+                  >
+                    <option value="flat">Flat Rate</option>
+                    <option value="reducing_balance">Reducing Balance</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Car Loan */}
+            <div className="p-4 bg-surface-gray-light rounded-lg border border-zinc-800">
+              <div className="flex items-center gap-2 mb-4">
+                <LoanTypeIcon type="car" size="lg" className="text-primary" />
+                <h3 className="text-lg font-semibold text-slate-100">Car Loan</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Interest Rate (% per annum) *
+                  </label>
+                  <input
+                    type="number"
+                    value={settings.loan_type_settings.car.interest_rate}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      loan_type_settings: {
+                        ...settings.loan_type_settings,
+                        car: { ...settings.loan_type_settings.car, interest_rate: parseFloat(e.target.value) }
+                      }
+                    })}
+                    className="input-field"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Interest Type *
+                  </label>
+                  <select
+                    value={settings.loan_type_settings.car.interest_type}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      loan_type_settings: {
+                        ...settings.loan_type_settings,
+                        car: { ...settings.loan_type_settings.car, interest_type: e.target.value }
+                      }
+                    })}
+                    className="input-field"
+                    required
+                  >
+                    <option value="flat">Flat Rate</option>
+                    <option value="reducing_balance">Reducing Balance</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Gold Loan */}
+            <div className="p-4 bg-surface-gray-light rounded-lg border border-zinc-800">
+              <div className="flex items-center gap-2 mb-4">
+                <LoanTypeIcon type="gold" size="lg" className="text-primary" />
+                <h3 className="text-lg font-semibold text-slate-100">Gold Loan</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Interest Rate (% per annum) *
+                  </label>
+                  <input
+                    type="number"
+                    value={settings.loan_type_settings.gold.interest_rate}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      loan_type_settings: {
+                        ...settings.loan_type_settings,
+                        gold: { ...settings.loan_type_settings.gold, interest_rate: parseFloat(e.target.value) }
+                      }
+                    })}
+                    className="input-field"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Interest Type *
+                  </label>
+                  <select
+                    value={settings.loan_type_settings.gold.interest_type}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      loan_type_settings: {
+                        ...settings.loan_type_settings,
+                        gold: { ...settings.loan_type_settings.gold, interest_type: e.target.value }
+                      }
+                    })}
+                    className="input-field"
+                    required
+                  >
+                    <option value="flat">Flat Rate</option>
+                    <option value="reducing_balance">Reducing Balance</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Gold Loan Settings */}
+        <div className="glass-card p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <LoanTypeIcon type="gold" size="lg" className="text-yellow-500" />
+            <h2 className="text-xl font-semibold text-slate-100">Gold Loan Settings</h2>
+          </div>
+          <p className="text-sm text-slate-400 mb-6">Configure gold rates per purity level</p>
+
+          <div className="space-y-6">
+            {/* Gold Rates per Purity */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Interest Calculation Method *
-              </label>
-              <select
-                value={settings.interest_type}
-                onChange={(e) => setSettings({ ...settings, interest_type: e.target.value })}
-                className="input-field"
-                required
-              >
-                <option value="flat">Flat Rate</option>
-                <option value="reducing_balance">Reducing Balance</option>
-              </select>
-              <p className="text-xs text-slate-500 mt-1">
-                {settings.interest_type === 'flat' ? 'Interest on original amount' : 'Interest on remaining balance'}
-              </p>
+              <h3 className="text-sm font-semibold text-slate-300 mb-4">Gold Rate per Gram (₹)</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    18K (75% pure) *
+                  </label>
+                  <input
+                    type="number"
+                    value={settings.gold_rates['18K']}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      gold_rates: { ...settings.gold_rates, '18K': parseFloat(e.target.value) }
+                    })}
+                    className="input-field"
+                    min="1000"
+                    step="100"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    22K (91.6% pure) *
+                  </label>
+                  <input
+                    type="number"
+                    value={settings.gold_rates['22K']}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      gold_rates: { ...settings.gold_rates, '22K': parseFloat(e.target.value) }
+                    })}
+                    className="input-field"
+                    min="1000"
+                    step="100"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    24K (99.9% pure) *
+                  </label>
+                  <input
+                    type="number"
+                    value={settings.gold_rates['24K']}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      gold_rates: { ...settings.gold_rates, '24K': parseFloat(e.target.value) }
+                    })}
+                    className="input-field"
+                    min="1000"
+                    step="100"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Example Calculation */}
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+              <h3 className="text-sm font-semibold text-yellow-400 mb-2">Example Calculation:</h3>
+              <div className="text-xs text-slate-300 space-y-1">
+                <p>• Gold Weight: 10 grams</p>
+                <p>• Purity: 24K</p>
+                <p>• Rate per gram: ₹{settings.gold_rates['24K'].toLocaleString()}</p>
+                <p>• Gold Value: 10g × ₹{settings.gold_rates['24K'].toLocaleString()} = ₹{(10 * settings.gold_rates['24K']).toLocaleString()}</p>
+                <p className="font-semibold text-yellow-400 mt-2 flex items-center gap-2">
+                  <LoanTypeIcon type="gold" size="sm" className="text-yellow-400" />
+                  <span>Maximum Loan Amount: ₹{(10 * settings.gold_rates['24K']).toLocaleString()}</span>
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Loan amount equals full gold value (no LTV or cap applied)
+                </p>
+              </div>
             </div>
           </div>
         </div>

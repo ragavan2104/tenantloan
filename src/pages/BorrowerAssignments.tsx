@@ -180,16 +180,22 @@ const BorrowerAssignments = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="page-shell max-w-7xl mx-auto">
       {/* Auto Split Dialog */}
       {showAutoSplitDialog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="glass-card p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-slate-100">Auto Split Borrowers</h2>
+          <div className="surface-card w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 sm:p-8">
+            <div className="flex items-start justify-between gap-4 mb-6">
+              <div>
+                <p className="section-label mb-2">Automation</p>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Auto Split Borrowers</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  Split borrowers evenly across selected workers in the current branch.
+                </p>
+              </div>
               <button
                 onClick={() => setShowAutoSplitDialog(false)}
-                className="text-slate-400 hover:text-slate-100"
+                className="rounded-xl p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-zinc-800 dark:hover:text-slate-100"
               >
                 <XMarkIcon className="w-6 h-6" />
               </button>
@@ -198,7 +204,7 @@ const BorrowerAssignments = () => {
             {/* Branch Selection */}
             {user?.role === 'owner' && branches && (
               <div className="mb-6">
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                   Select Branch
                 </label>
                 <select
@@ -218,27 +224,29 @@ const BorrowerAssignments = () => {
 
             {/* Worker Selection */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                 Select Workers ({selectedWorkers.length} selected)
               </label>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
+              <div className="grid gap-3 max-h-72 overflow-y-auto pr-1 sm:grid-cols-2">
                 {splitWorkers.length === 0 ? (
-                  <p className="text-slate-500 text-center py-4">No workers in this branch</p>
+                  <p className="col-span-full rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-6 text-center text-slate-500 dark:border-zinc-700 dark:bg-zinc-900/40 dark:text-slate-400">
+                    No workers in this branch
+                  </p>
                 ) : (
                   splitWorkers.map((worker) => (
                     <label
                       key={worker.id}
-                      className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg border border-zinc-700 hover:border-primary/50 cursor-pointer transition-colors"
+                      className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/60"
                     >
                       <input
                         type="checkbox"
                         checked={selectedWorkers.includes(worker.id)}
                         onChange={() => toggleWorkerSelection(worker.id)}
-                        className="w-4 h-4 text-primary bg-zinc-700 border-zinc-600 rounded focus:ring-primary"
+                        className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary dark:border-zinc-600 dark:bg-zinc-800"
                       />
-                      <div className="flex-1">
-                        <p className="font-medium text-slate-100">{worker.name}</p>
-                        <p className="text-xs text-slate-400">{worker.email}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold text-slate-900 dark:text-slate-100">{worker.name}</p>
+                        <p className="truncate text-xs text-slate-500 dark:text-slate-400">{worker.email}</p>
                       </div>
                     </label>
                   ))
@@ -246,7 +254,7 @@ const BorrowerAssignments = () => {
               </div>
               <button
                 onClick={() => setSelectedWorkers(splitWorkers.map(w => w.id))}
-                className="text-sm text-primary hover:underline mt-2"
+                className="mt-3 text-sm font-medium text-primary hover:text-indigo-600"
               >
                 Select All
               </button>
@@ -254,12 +262,12 @@ const BorrowerAssignments = () => {
 
             {/* Summary */}
             {splitBorrowers && selectedWorkers.length > 0 && (
-              <div className="mb-6 p-4 bg-primary/10 rounded-lg border border-primary/30">
-                <p className="text-sm text-slate-300">
+              <div className="mb-6 rounded-2xl border border-primary/20 bg-primary/5 p-4 dark:bg-primary/10">
+                <p className="text-sm text-slate-700 dark:text-slate-300">
                   <span className="font-semibold">{splitBorrowers.length}</span> borrowers will be split among{' '}
                   <span className="font-semibold">{selectedWorkers.length}</span> workers
                 </p>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   ~{Math.ceil(splitBorrowers.length / selectedWorkers.length)} borrowers per worker
                 </p>
               </div>
@@ -285,41 +293,83 @@ const BorrowerAssignments = () => {
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <UserGroupIcon className="w-8 h-8 text-primary" />
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-100">Borrower Assignments</h1>
-            <p className="text-slate-400 mt-1">Assign borrowers to workers for better management</p>
+      {/* Hero */}
+      <div className="surface-card overflow-hidden">
+        <div className="grid gap-6 p-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)] lg:p-8">
+          <div className="flex items-start gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/10">
+              <UserGroupIcon className="h-7 w-7" />
+            </div>
+            <div className="min-w-0">
+              <p className="section-label mb-2">Workflow</p>
+              <h1 className="page-title">Borrower Assignments</h1>
+              <p className="page-subtitle max-w-2xl">
+                Assign borrowers to workers, filter the board, or split the workload automatically when you need a fast redistribution.
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Active branch</p>
+              <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
+                {branches?.find(b => b.id === selectedBranch)?.name || 'Select a branch'}
+              </p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{workers.length} workers available</p>
+            </div>
+            <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-sm dark:bg-primary/10">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Actions</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  onClick={handleAutoSplit}
+                  disabled={workers.length === 0 || bulkAssignMutation.isPending}
+                  className="btn-secondary flex items-center gap-2"
+                >
+                  <ArrowPathIcon className="w-5 h-5" />
+                  <span>Auto Split</span>
+                </button>
+                <button
+                  onClick={handleClearAll}
+                  disabled={bulkAssignMutation.isPending}
+                  className="btn-secondary"
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={handleAutoSplit}
-            disabled={workers.length === 0 || bulkAssignMutation.isPending}
-            className="btn-secondary flex items-center gap-2"
-          >
-            <ArrowPathIcon className="w-5 h-5" />
-            <span>Auto Split</span>
-          </button>
-          <button
-            onClick={handleClearAll}
-            disabled={bulkAssignMutation.isPending}
-            className="btn-secondary"
-          >
-            Clear All
-          </button>
+      </div>
+
+      {/* Summary */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="metric-card">
+          <p className="section-label mb-2">Total borrowers</p>
+          <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{filteredBorrowers.length}</p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Visible after branch and search filters</p>
+        </div>
+        <div className="metric-card">
+          <p className="section-label mb-2">Assigned</p>
+          <p className="text-3xl font-bold text-success">{filteredBorrowers.filter(b => b.assigned_to).length}</p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Borrowers already mapped to workers</p>
+        </div>
+        <div className="metric-card">
+          <p className="section-label mb-2">Unassigned</p>
+          <p className="text-3xl font-bold text-warning">{unassignedBorrowers.length}</p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Ready for manual assignment</p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="glass-card p-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="page-card">
+        <div className="mb-4 flex items-center gap-2">
+          <FunnelIcon className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Filters</h2>
+        </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {/* Branch Filter (Owner only) */}
           {user?.role === 'owner' && branches && (
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Branch</label>
+              <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">Branch</label>
               <select
                 value={selectedBranch}
                 onChange={(e) => setSelectedBranch(e.target.value)}
@@ -335,7 +385,7 @@ const BorrowerAssignments = () => {
 
           {/* Search */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Search</label>
+            <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">Search</label>
             <input
               type="text"
               value={searchTerm}
@@ -347,9 +397,8 @@ const BorrowerAssignments = () => {
 
           {/* Filter Status */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              <FunnelIcon className="w-4 h-4 inline mr-1" />
-              Filter
+            <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+              Status
             </label>
             <select
               value={filterStatus}
@@ -364,42 +413,34 @@ const BorrowerAssignments = () => {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="glass-card p-4">
-          <p className="text-sm text-slate-400 mb-1">Total Borrowers</p>
-          <p className="text-2xl font-bold text-slate-100">{filteredBorrowers.length}</p>
-        </div>
-        <div className="glass-card p-4">
-          <p className="text-sm text-slate-400 mb-1">Assigned</p>
-          <p className="text-2xl font-bold text-success">
-            {filteredBorrowers.filter(b => b.assigned_to).length}
-          </p>
-        </div>
-        <div className="glass-card p-4">
-          <p className="text-sm text-slate-400 mb-1">Unassigned</p>
-          <p className="text-2xl font-bold text-warning">{unassignedBorrowers.length}</p>
-        </div>
-      </div>
-
       {/* Assignment Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Unassigned Column */}
-        <div className="glass-card p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-slate-100">
+        <div className="surface-card p-4 sm:p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
               Unassigned ({unassignedBorrowers.length})
             </h3>
+            <span className="rounded-full bg-warning/10 px-2.5 py-1 text-xs font-semibold text-warning">
+              Needs action
+            </span>
           </div>
-          <div className="space-y-2 max-h-[600px] overflow-y-auto">
+          <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
             {unassignedBorrowers.map((borrower) => (
               <div
                 key={borrower.id}
-                className="p-3 bg-zinc-800/50 rounded-lg border border-zinc-700 hover:border-primary/50 transition-colors"
+                className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/60"
               >
-                <p className="font-medium text-slate-100 text-sm">{borrower.name}</p>
-                <p className="text-xs text-slate-400">{borrower.phone}</p>
-                <p className="text-xs text-warning mt-1">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{borrower.name}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{borrower.phone}</p>
+                  </div>
+                  <span className="rounded-full bg-slate-900/5 px-2 py-1 text-[11px] font-semibold text-slate-600 dark:bg-white/5 dark:text-slate-300">
+                    Unassigned
+                  </span>
+                </div>
+                <p className="mt-2 text-xs font-medium text-warning">
                   ₹{borrower.outstanding_balance?.toLocaleString() || 'N/A'} outstanding
                 </p>
                 <select
@@ -411,7 +452,7 @@ const BorrowerAssignments = () => {
                       });
                     }
                   }}
-                  className="input-field text-xs mt-2 w-full"
+                  className="input-field mt-3 w-full text-sm"
                   defaultValue=""
                 >
                   <option value="">Assign to...</option>
@@ -431,23 +472,35 @@ const BorrowerAssignments = () => {
 
         {/* Worker Columns */}
         {workerAssignments.map(({ worker, borrowers: workerBorrowers }) => (
-          <div key={worker.id} className="glass-card p-4">
-            <div className="flex items-center gap-2 mb-4">
-              <UserIcon className="w-5 h-5 text-primary" />
-              <div className="flex-1">
-                <h3 className="font-semibold text-slate-100">{worker.name}</h3>
-                <p className="text-xs text-slate-400">{workerBorrowers.length} borrowers</p>
+          <div key={worker.id} className="surface-card p-4 sm:p-5">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/10">
+                <UserIcon className="h-5 w-5" />
               </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="truncate text-base font-semibold text-slate-900 dark:text-slate-100">{worker.name}</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{workerBorrowers.length} borrowers assigned</p>
+              </div>
+              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                {workerBorrowers.length}
+              </span>
             </div>
-            <div className="space-y-2 max-h-[600px] overflow-y-auto">
+            <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
               {workerBorrowers.map((borrower) => (
                 <div
                   key={borrower.id}
-                  className="p-3 bg-primary/10 rounded-lg border border-primary/30"
+                  className="rounded-2xl border border-primary/15 bg-primary/5 p-4 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
                 >
-                  <p className="font-medium text-slate-100 text-sm">{borrower.name}</p>
-                  <p className="text-xs text-slate-400">{borrower.phone}</p>
-                  <p className="text-xs text-warning mt-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{borrower.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{borrower.phone}</p>
+                    </div>
+                    <span className="rounded-full bg-success/10 px-2 py-1 text-[11px] font-semibold text-success">
+                      Assigned
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs font-medium text-warning">
                     ₹{borrower.outstanding_balance?.toLocaleString() || 'N/A'} outstanding
                   </p>
                   <button
@@ -457,24 +510,30 @@ const BorrowerAssignments = () => {
                         workerId: null,
                       });
                     }}
-                    className="text-xs text-danger hover:underline mt-2"
+                    className="mt-3 text-xs font-semibold text-danger hover:text-rose-700 hover:underline"
                   >
                     Unassign
                   </button>
                 </div>
               ))}
               {workerBorrowers.length === 0 && (
-                <p className="text-center text-slate-500 py-8 text-sm">No assigned borrowers</p>
+                <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-8 text-center text-sm text-slate-500 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-slate-400">
+                  No assigned borrowers
+                </p>
               )}
             </div>
           </div>
         ))}
 
         {workers.length === 0 && (
-          <div className="col-span-2 glass-card p-12 text-center">
-            <UserIcon className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-slate-300 mb-2">No Workers Found</h3>
-            <p className="text-slate-500">Add workers to this branch to start assigning borrowers</p>
+          <div className="lg:col-span-2 surface-card p-12 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-slate-300">
+              <UserIcon className="w-8 h-8" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">No Workers Found</h3>
+            <p className="text-slate-500 dark:text-slate-400">
+              Add workers to this branch to start assigning borrowers.
+            </p>
           </div>
         )}
       </div>
