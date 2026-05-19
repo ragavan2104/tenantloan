@@ -490,6 +490,7 @@ const BorrowerDetail = () => {
                 Cancel
               </button>
               <button
+                onClick={handlePayment}
                 className="btn-primary flex-1"
                 disabled={paymentMutation.isPending || paymentAmount <= 0}
               >
